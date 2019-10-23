@@ -1,4 +1,5 @@
 #include "vector.h"
+#include <math.h>
 
 struct Vector convQuatToVec(struct Quaternion quat)
 {
