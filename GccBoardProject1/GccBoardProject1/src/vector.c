@@ -7,9 +7,9 @@ struct Vector convQuatToVec(struct Quaternion quat)
 	return vec;
 }
 
-struct Vector multiply(struct Vector original, float skalar)
+struct Vector multiply(struct Vector original, float scalar)
 {
-	struct Vector ret = {original.x * skalar, original.y * skalar, original.z * skalar};
+	struct Vector ret = {original.x * scalar, original.y * scalar, original.z * scalar};
 	return ret;
 }
 
@@ -47,6 +47,6 @@ float magnitude(struct Vector vector)
  struct Vector rotate(struct Vector vec, struct Quaternion rotation)
  {
 	 struct Quaternion vecToQuad = convVecToQuat(vec);
-	 struct Quaternion rotated = hamiltonP(hamiltonP(rotation, vecToQuad), konjugate(rotation));
+	 struct Quaternion rotated = hamiltonP(hamiltonP(rotation, vecToQuad), conjugate(rotation));
 	 return convQuatToVec(rotated);
  }

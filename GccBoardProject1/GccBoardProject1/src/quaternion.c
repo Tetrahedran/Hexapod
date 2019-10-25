@@ -20,7 +20,7 @@ struct Quaternion quatForRot(struct Vector axis, float angle)
 	return quad;
 }
 
-struct Quaternion konjugate(struct Quaternion quat) 
+struct Quaternion conjugate(struct Quaternion quat) 
 {
 	struct Quaternion ret = {quat.w, -quat.i, -quat.j, -quat.k};
 	return ret;

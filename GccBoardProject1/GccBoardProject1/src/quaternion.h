@@ -5,7 +5,7 @@
 extern struct Quaternion quatForRot(struct Vector, float);
 extern struct Quaternion convVecToQuat(struct Vector);
 
-extern struct Quaternion konjugate(struct Quaternion);
+extern struct Quaternion conjugate(struct Quaternion);
 extern struct Quaternion hamiltonP(struct Quaternion, struct Quaternion);
 
 #endif
