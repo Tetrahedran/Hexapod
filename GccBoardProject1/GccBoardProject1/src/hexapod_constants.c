@@ -45,17 +45,17 @@ void initialize(
 void calcHornAngle(void) 
  {
 	 hornRotations[0] = M_PI;
-	 hornRotations[1] = 0f;
-	 hornRotations[2] = 60f / 360f * 2f * M_PI;
-	 hornRotations[3] = -120f / 360f * 2f * M_PI;
-	 hornRotations[4] = -60f / 360f * 2f * M_PI;
-	 hornRotations[5] = 120f / 360f * 2f * M_PI;
+	 hornRotations[1] = 0.0f;
+	 hornRotations[2] = 60.0f / 360.0f * 2.0f * M_PI;
+	 hornRotations[3] = -120.0f / 360.0f * 2.0f * M_PI;
+	 hornRotations[4] = -60.0f / 360.0f * 2.0f * M_PI;
+	 hornRotations[5] = 120.0f / 360.0f * 2.0f * M_PI;
 	 
  }
 
 void calcAnchorPositions(void)
 {
-	float inversePPosKoeff = 1f - platPositionKoeff;
+	float inversePPosKoeff = 1.0f - platPositionKoeff;
 	
 	struct Vector AB = subtract(Bp, Ap);
 	struct Vector BC = subtract(Cp, Bp);
@@ -71,7 +71,7 @@ void calcAnchorPositions(void)
 
 void calcMotorPositions(void)
 {
-	float inverseBPosKoeff = 1f - basePositionKoeff;
+	float inverseBPosKoeff = 1.0f - basePositionKoeff;
 	
 	struct Vector AB = subtract(Bb, Ab);
 	struct Vector BC = subtract(Cb, Bb);
@@ -87,17 +87,17 @@ void calcMotorPositions(void)
 
 void calcTriangleCorner(void)
 {
-	float innKreisRadiusB = sqrt3 / 6f * baseSideLength;
-	float umKreisRadiusB = 2f * innKreisRadiusB;
+	float innKreisRadiusB = sqrt3 / 6.0f * baseSideLength;
+	float umKreisRadiusB = 2.0f * innKreisRadiusB;
 	
 	Ab = {
-		-baseSideLength / 2f,
+		-baseSideLength / 2.0f,
 		-innKreisRadiusB,
 		0	
 	};
 	
 	Bb = {
-		baseSideLength / 2f,
+		baseSideLength / 2.0f,
 		-innKreisRadiusB,
 		0
 	};
@@ -108,8 +108,8 @@ void calcTriangleCorner(void)
 		0
 	};
 	
-	float innKreisRadiusP = sqrt3 / 6f * platformSideLength;
-	float umKreisRadiusP = 2f * innKreisRadiusP;
+	float innKreisRadiusP = sqrt3 / 6.0f * platformSideLength;
+	float umKreisRadiusP = 2.0f * innKreisRadiusP;
 	
 	Ap = {
 		0
@@ -118,7 +118,7 @@ void calcTriangleCorner(void)
 	};
 	
 	Bp = {
-		platformSideLength / 2f,
+		platformSideLength / 2.0f,
 		innKreisRadiusP,
 		0
 	};
