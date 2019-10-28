@@ -55,5 +55,5 @@ dkms.conf
 *.atsuo
 
 # BS
-Release
-Debug
+Release/
+Debug/
