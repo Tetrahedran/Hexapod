@@ -24,6 +24,7 @@ float* calcMotorAngles(struct Vector absTranslation, struct Quaternion absRotati
 		struct Vector effectiveRod = calcEffectiveRodLength(absTranslation, absRotation, motorPositions[i], anchorPositions[i]);
 		sollWinkel[i] = angle(effectiveRod, rodLength, hornLength, hornRotations[i]);
 	}
+	return sollWinkel;
 }
 
 /*
