@@ -9,6 +9,9 @@ volatile uint8_t pwmlength = 0;
 volatile uint16_t limit = 0;
 volatile uint8_t rest = 0;
 
+volatile uint16_t limit2 = 0;
+volatile uint8_t rest2 = 0;
+
 int main (void)
 {
 	//Power Source
@@ -40,6 +43,10 @@ int main (void)
 		uint16_t number = 160 * length;
 		limit = number / 256;
 		rest = number % 256;
+		
+		limit2 = number * 2 / 256;
+		rest2 = number * 2 % 256;
+		
 		pwmlength = ~PINA;
 	}
 	return 0;
@@ -53,7 +60,7 @@ ISR( TIMER2_COMPA_vect )
 	{		
 		TCCR0B = (1<<CS00);
 		counter2 = 0;
-		PORTC = ~PORTC;
+		PORTC = 0xFF;
 	}
 }
 
@@ -61,11 +68,20 @@ ISR( TIMER0_COMPA_vect )
 {
 	counter++;
 	OCR0A = 255;
+	
+	//timer resetten aus if's auslagern und nur einmal ausführen nachdem alle ifs durchlaufen sind
 	if (counter	> limit)
 	{
 		OCR0A = rest;
 		counter = 0;
-		PORTC = ~PORTC;
-		TCCR0B = (0<<CS00);
+		PORTC ^= 1 << 0;
 	}
+	if (counter	> limit2)
+	{
+		OCR0A = rest2;
+		counter = 0;
+		PORTC ^= 1 << 1;
+	}
+	//sobald alle auf 0
+	TCCR0B = (0<<CS00);
 }
