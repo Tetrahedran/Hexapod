@@ -3,14 +3,27 @@
 #include "vector.h"
 #include "quaternion.h"
 
+struct LimitRest {
+	uint16_t limit;
+	uint8_t rest;
+};
+
+struct PinTimers {
+	struct LimitRest limitRest;
+	uint8_t port;
+};
+
+struct LimitRest calculatePwm(uint8_t pwmLength);
+struct PinTimers loadTimerValues();
+
 volatile uint16_t counter = 0;
 volatile uint16_t counter2 = 0;
 volatile uint8_t pwmlength = 0;
-volatile uint16_t limit = 0;
-volatile uint8_t rest = 0;
 
-volatile uint16_t limit2 = 0;
-volatile uint8_t rest2 = 0;
+volatile struct LimitRest limitRest = {0, 0};
+volatile struct LimitRest limitRest2 = {0, 0};
+
+volatile struct PinTimers pinTimers[6] = NULL;
 
 int main (void)
 {
@@ -39,14 +52,9 @@ int main (void)
 	sei();
 	
 	while (1) {
-		uint16_t length = 100 + (100 * pwmlength / 255);
-		uint16_t number = 160 * length;
-		limit = number / 256;
-		rest = number % 256;
-		
-		limit2 = number * 2 / 256;
-		rest2 = number * 2 % 256;
-		
+		limitRest = calculatePwm(pwmlength);
+		limitRest2 = calculatePwm(pwmlength * 2);
+
 		pwmlength = ~PINA;
 	}
 	return 0;
@@ -61,6 +69,7 @@ ISR( TIMER2_COMPA_vect )
 		TCCR0B = (1<<CS00);
 		counter2 = 0;
 		PORTC = 0xFF;
+		pinTimers = 
 	}
 }
 
@@ -70,18 +79,37 @@ ISR( TIMER0_COMPA_vect )
 	OCR0A = 255;
 	
 	//timer resetten aus if's auslagern und nur einmal ausführen nachdem alle ifs durchlaufen sind
-	if (counter	> limit)
+	if (counter	> limitRest.limit)
 	{
-		OCR0A = rest;
+		OCR0A = limitRest.rest;
 		counter = 0;
 		PORTC ^= 1 << 0;
 	}
-	if (counter	> limit2)
+	if (counter	> limitRest2.limit)
 	{
-		OCR0A = rest2;
+		OCR0A = limitRest2.rest;
 		counter = 0;
 		PORTC ^= 1 << 1;
 	}
 	//sobald alle auf 0
 	TCCR0B = (0<<CS00);
+}
+
+struct LimitRest calculatePwm(uint8_t pwmLength) {
+	struct LimitRest result;
+	
+	uint16_t length = 100 + (100 * pwmlength / 255);
+	uint16_t number = 160 * length;
+	result.limit = number / 256;
+	result.rest = number % 256;
+	
+	return result;
+}
+
+struct PinTimers loadTimerValues() {
+	//TODO
+	struct PinTimers result;
+	
+	//dummy values
+	
 }
