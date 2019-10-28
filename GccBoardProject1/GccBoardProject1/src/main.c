@@ -1,16 +1,26 @@
 #define F_CPU 16000000UL
 #include <asf.h>
-#include "vector.h"
-#include "quaternion.h"
+#include "hexapod.h"
+#include "sort.h"
 
-volatile uint16_t counter = 0;
-volatile uint16_t counter2 = 0;
-volatile uint8_t pwmlength = 0;
-volatile uint16_t limit = 0;
-volatile uint8_t rest = 0;
+struct LimitRest {
+	uint16_t limit;
+	uint8_t rest;
+};
 
-volatile uint16_t limit2 = 0;
-volatile uint8_t rest2 = 0;
+struct PinTimer {
+	struct LimitRest limitRest;
+	uint8_t pin;
+};
+
+struct LimitRest calculatePwm(uint8_t pwmLength);
+struct PinTimer* loadTimerValues(void);
+
+volatile uint16_t turnOffCounter = 0;
+volatile uint16_t turnOnCounter = 0;
+volatile uint8_t pinCounter = 0; //Zählt, welcher Wert in pinTimers als nächstes gelesen wird
+
+volatile struct PinTimer pinTimers[6];
 
 int main (void)
 {
@@ -38,50 +48,98 @@ int main (void)
 	OCR0A = 255;
 	sei();
 	
+	struct PinTimer *pTimerVals = loadTimerValues();
+	for(uint8_t x = 0; x < 6; x++) {
+		pinTimers[x] = *(pTimerVals + x);
+	}
+	
 	while (1) {
-		uint16_t length = 100 + (100 * pwmlength / 255);
-		uint16_t number = 160 * length;
-		limit = number / 256;
-		rest = number % 256;
 		
-		limit2 = number * 2 / 256;
-		rest2 = number * 2 % 256;
-		
-		pwmlength = ~PINA;
 	}
 	return 0;
 }
 
 ISR( TIMER2_COMPA_vect )
 {
-	counter2++;
+	turnOnCounter++;
 	OCR2A = 255;
-	if (counter2 >= 1250)
-	{		
-		TCCR0B = (1<<CS00);
-		counter2 = 0;
-		PORTC = 0xFF;
+	if (turnOnCounter >= 1250)
+	{
+		TCCR0B |= (1<<CS00);
+		turnOnCounter = 0;
+		PORTC = 0x3F; // 0011 1111
+		
+		struct PinTimer *pTimerVals = loadTimerValues();
+		for(uint8_t x = 0; x < 6; x++) {
+			pinTimers[x] = *(pTimerVals + x);
+		}
 	}
 }
 
 ISR( TIMER0_COMPA_vect )
 {
-	counter++;
+	turnOffCounter++;
 	OCR0A = 255;
 	
-	//timer resetten aus if's auslagern und nur einmal ausführen nachdem alle ifs durchlaufen sind
-	if (counter	> limit)
+	if (turnOffCounter	> pinTimers[pinCounter].limitRest.limit)
 	{
-		OCR0A = rest;
-		counter = 0;
-		PORTC ^= 1 << 0;
+		
+		OCR0A = pinTimers[pinCounter].limitRest.rest;
+		PORTC &= ~(1<<pinTimers[pinCounter].pin);
+		
+		turnOffCounter = 0;
+		if(pinCounter >= 5) {
+			pinCounter = 0;
+		} else {
+			pinCounter++;
+		}
 	}
-	if (counter	> limit2)
-	{
-		OCR0A = rest2;
-		counter = 0;
-		PORTC ^= 1 << 1;
-	}
+
 	//sobald alle auf 0
-	TCCR0B = (0<<CS00);
+	if(PORTC == 0x00) {
+		TCCR0B &= ~(1<<CS00);
+	}
+}
+
+/*
+* Berechnet die Werte limit (Zahl der Timerzyklen) und rest (Wert des letzten Zyklus) anhand eines PWM-Werts.
+*/
+struct LimitRest calculatePwm(uint8_t pwmlength) {
+	struct LimitRest result;
+	
+	uint16_t length = 100 + (100 * pwmlength / 255);
+	uint16_t number = 160 * length;
+	result.limit = number / 256;
+	result.rest = number % 256;
+	
+	return result;
+}
+
+/*
+* Lädt und sortiert die Werte, die das Abschalten der Servomotor Pins bestimmen.
+*/
+struct PinTimer* loadTimerValues(void) {
+	static struct PinTimer result[6];
+	
+	//Beispielwerte
+	struct Pwmlength pwmlengths[6] = {{240, 0}, {55, 1}, {80, 2}, {100, 3}, {10, 4}, {100, 5}};
+	
+	struct Pwmlength *pPwm = sort(pwmlengths);
+	
+	for(uint8_t x = 0; x < 6; x++) {
+		pwmlengths[x] = *(pPwm + x);
+	}
+	
+	for (uint8_t i = 0; i < 6; i++) {
+		uint8_t partialPwm = pwmlengths[i].pwmlength;
+		
+		if (i > 0) {
+			partialPwm -= pwmlengths[i - 1].pwmlength;
+		}
+		
+		result[i].limitRest = calculatePwm(partialPwm);
+		result[i].pin = pwmlengths[i].pin;
+	}
+	
+	return result;
 }
