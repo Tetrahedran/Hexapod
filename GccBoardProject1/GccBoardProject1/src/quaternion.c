@@ -9,7 +9,7 @@ struct Quaternion convVecToQuat(struct Vector vec)
 
 struct Quaternion quatForRot(struct Vector axis, float angle)
 {
-	float halfAngle = angle / 2f;
+	float halfAngle = angle / 2.0f;
 	float sinHalfAngle = sinf(halfAngle);
 	struct Quaternion quad = {
 		cosf(halfAngle),

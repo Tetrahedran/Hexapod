@@ -2,6 +2,7 @@
 #define VECTOR_H
 #include "structs.h"
 
+
 extern struct Vector convQuatToVec(struct Quaternion);
 
 extern struct Vector multiply(struct Vector, float);

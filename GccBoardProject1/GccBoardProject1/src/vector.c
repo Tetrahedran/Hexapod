@@ -1,4 +1,5 @@
 #include "vector.h"
+#include "quaternion.h"
 #include <math.h>
 
 struct Vector convQuatToVec(struct Quaternion quat)
@@ -21,7 +22,7 @@ struct Vector add(struct Vector first, struct Vector second)
 
 struct Vector subtract(struct Vector first, struct Vector second)
 {
-	return add(first, multiply(second, -1f));
+	return add(first, multiply(second, -1.0f));
 }
 
 struct Vector cross(struct Vector lhs, struct Vector rhs)
