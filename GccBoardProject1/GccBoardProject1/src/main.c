@@ -60,7 +60,7 @@ ISR( TIMER2_COMPA_vect )
 	{		
 		TCCR0B = (1<<CS00);
 		counter2 = 0;
-		PORTC = ~PORTC;
+		PORTC = 0xFF;
 	}
 }
 
@@ -74,14 +74,14 @@ ISR( TIMER0_COMPA_vect )
 	{
 		OCR0A = rest;
 		counter = 0;
-		PORTC ^= 1UL << 0;
-		TCCR0B = (0<<CS00);
+		PORTC ^= 1 << 0;
 	}
 	if (counter	> limit2)
 	{
 		OCR0A = rest2;
 		counter = 0;
-		PORTC ^= 1UL << 1;
-		TCCR0B = (0<<CS00);
+		PORTC ^= 1 << 1;
 	}
+	//sobald alle auf 0
+	TCCR0B = (0<<CS00);
 }
