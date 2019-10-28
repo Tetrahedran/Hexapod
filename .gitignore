@@ -53,3 +53,7 @@ dkms.conf
 
 # Penis
 *.atsuo
+
+# BS
+Release
+Debug
