@@ -1,4 +1,5 @@
 #include "hexapod.h"
+#include <math.h>
 
 struct Vector calcEffectiveRodLength(
 	struct Vector absTrans,
@@ -18,7 +19,7 @@ float angle(struct Vector effectiveRodVector, float rodLength, float hornLength,
 */
 float* calcMotorAngles(struct Vector absTranslation, struct Quaternion absRotation)
 {
-	float[6] sollWinkel;
+	float sollWinkel[6];
 	for (short i = 0; i < 6; i++)
 	{
 		struct Vector effectiveRod = calcEffectiveRodLength(absTranslation, absRotation, motorPositions[i], anchorPositions[i]);
@@ -32,10 +33,10 @@ float* calcMotorAngles(struct Vector absTranslation, struct Quaternion absRotati
 */
 float angle(struct Vector effectiveRodVector, float rodLength, float hornLength, float hornRot)
 {
-	float eK = eK(hornLength, effectiveRodVector);
-	float fK = fK(hornLength, effectiveRodVector, hornRot);
-	float gK = gK(hornLength, effectiveRodVector, rodLength);
-	return alphaK(eK, fK, gK);
+	float EK = eK(hornLength, effectiveRodVector);
+	float FK = fK(hornLength, effectiveRodVector, hornRot);
+	float GK = gK(hornLength, effectiveRodVector, rodLength);
+	return alphaK(EK, FK, GK);
 }
 
 /*
@@ -43,7 +44,7 @@ float angle(struct Vector effectiveRodVector, float rodLength, float hornLength,
 */
 float eK(float hornLength, struct Vector effectiveRodVector)
 {
-	return 2f * hornLength * effectiveRodVector.z;
+	return 2.0f * hornLength * effectiveRodVector.z;
 }
 
 /*
@@ -51,7 +52,7 @@ float eK(float hornLength, struct Vector effectiveRodVector)
 */
 float fK(float hornLength, struct Vector effectiveRodVector, float hornRotation)
 {
-	return 2f * hornLength * (cosf(hornRotation) * effectiveRodVector.x + sinf(hornRotation) * effectiveRodVector.y);
+	return 2.0f * hornLength * (cosf(hornRotation) * effectiveRodVector.x + sinf(hornRotation) * effectiveRodVector.y);
 }
 
 /*

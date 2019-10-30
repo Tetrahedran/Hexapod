@@ -232,7 +232,37 @@
     <Folder Include="src\config\" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="src\hexapod.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\hexapod_constants.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\hexpod.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\hexpod_constants.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\quaternion.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\quaternion.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="src\sort.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\sort.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\structs.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\vector.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\vector.h">
       <SubType>compile</SubType>
     </Compile>
     <None Include="src\asf.h">

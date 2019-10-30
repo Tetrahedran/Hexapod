@@ -90,19 +90,19 @@ void calcTriangleCorner(void)
 	float innKreisRadiusB = sqrt3 / 6.0f * baseSideLength;
 	float umKreisRadiusB = 2.0f * innKreisRadiusB;
 	
-	Ab = {
+	Ab = (struct Vector){
 		-baseSideLength / 2.0f,
 		-innKreisRadiusB,
 		0	
 	};
 	
-	Bb = {
+	Bb = (struct Vector){
 		baseSideLength / 2.0f,
 		-innKreisRadiusB,
 		0
 	};
 	
-	Cb = {
+	Cb = (struct Vector){
 		0,
 		umKreisRadiusB,
 		0
@@ -111,19 +111,19 @@ void calcTriangleCorner(void)
 	float innKreisRadiusP = sqrt3 / 6.0f * platformSideLength;
 	float umKreisRadiusP = 2.0f * innKreisRadiusP;
 	
-	Ap = {
+	Ap = (struct Vector){
 		0
 		-umKreisRadiusP,
 		0
 	};
 	
-	Bp = {
+	Bp = (struct Vector){
 		platformSideLength / 2.0f,
 		innKreisRadiusP,
 		0
 	};
 	
-	Cp = {
+	Cp = (struct Vector){
 		-platformSideLength / 2,
 		innKreisRadiusP,
 		0
