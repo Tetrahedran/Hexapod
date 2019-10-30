@@ -1,6 +1,8 @@
 #define F_CPU 16000000UL
 #include <asf.h>
+#include <math.h>
 #include "hexapod.h"
+#include "hexpod_constants.h"
 #include "sort.h"
 
 struct LimitRest {
@@ -19,6 +21,7 @@ struct PinTimer* loadTimerValues(void);
 volatile uint16_t turnOffCounter = 0;
 volatile uint16_t turnOnCounter = 0;
 volatile uint8_t pinCounter = 0; //Zählt, welcher Wert in pinTimers als nächstes gelesen wird
+volatile struct Vector trans = (struct Vector) {0.0f, 0.0f, 0.0f};
 
 volatile struct PinTimer pinTimers[6];
 
@@ -47,6 +50,8 @@ int main (void)
 	TIMSK0 |= (1<<OCIE0A);
 	OCR0A = 255;
 	sei();
+	
+	initialize(0.25f, 0.23f, 0.0925f, 0.015f, 0.425f, 0.39f);
 	
 	struct PinTimer *pTimerVals = loadTimerValues();
 	for(uint8_t x = 0; x < 6; x++) {
@@ -90,6 +95,8 @@ ISR( TIMER0_COMPA_vect )
 		turnOffCounter = 0;
 		if(pinCounter >= 5) {
 			pinCounter = 0;
+			PORTC = 0;
+			TCCR0B = 0;
 		} else {
 			pinCounter++;
 		}
@@ -97,7 +104,7 @@ ISR( TIMER0_COMPA_vect )
 
 	//sobald alle auf 0
 	if(PORTC == 0x00) {
-		TCCR0B &= ~(1<<CS00);
+		
 	}
 }
 
@@ -106,11 +113,16 @@ ISR( TIMER0_COMPA_vect )
 */
 struct LimitRest calculatePwm(uint8_t pwmlength) {
 	struct LimitRest result;
+	uint16_t limit;
+	uint8_t rest;
 	
-	uint16_t length = 100 + (100 * pwmlength / 255);
-	uint16_t number = 160 * length;
-	result.limit = number / 256;
-	result.rest = number % 256;
+	int length = 100 + ((100 * pwmlength) / 255);
+	int number = 160 * length;
+	limit = number / 256;
+	rest = number % 256;
+	
+	result.limit = limit;
+	result.rest = rest;
 	
 	return result;
 }
@@ -120,9 +132,18 @@ struct LimitRest calculatePwm(uint8_t pwmlength) {
 */
 struct PinTimer* loadTimerValues(void) {
 	static struct PinTimer result[6];
+	static struct Pwmlength pwmlengths[6];
+	//trans.z += 0.01f;
+	float* angles = calcMotorAngles(trans, (struct Quaternion) {1.0f, 0.0f, 0.0f, 0.0f});
+	for (short i = 0; i < 6; i++)
+	{
+		float angle = *(angles + i);
+		uint8_t pwm = (angle + M_PI) / (2.0f * M_PI) * 255;
+		pwmlengths[i] = (struct Pwmlength) {pwm, i};
+	}
 	
 	//Beispielwerte
-	struct Pwmlength pwmlengths[6] = {{240, 0}, {55, 1}, {80, 2}, {100, 3}, {10, 4}, {100, 5}};
+	//struct Pwmlength pwmlengths[6] = {{240, 0}, {55, 1}, {80, 2}, {100, 3}, {10, 4}, {100, 5}};
 	
 	struct Pwmlength *pPwm = sort(pwmlengths);
 	
@@ -134,7 +155,7 @@ struct PinTimer* loadTimerValues(void) {
 		uint8_t partialPwm = pwmlengths[i].pwmlength;
 		
 		if (i > 0) {
-			partialPwm -= pwmlengths[i - 1].pwmlength;
+			partialPwm = partialPwm - pwmlengths[i - 1].pwmlength;
 		}
 		
 		result[i].limitRest = calculatePwm(partialPwm);
