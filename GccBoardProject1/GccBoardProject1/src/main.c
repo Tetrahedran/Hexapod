@@ -100,11 +100,6 @@ ISR( TIMER0_COMPA_vect )
 			pinCounter++;
 		}
 	}
-
-	//sobald alle auf 0
-	if(PORTC == 0x00) {
-		
-	}
 }
 
 /*
