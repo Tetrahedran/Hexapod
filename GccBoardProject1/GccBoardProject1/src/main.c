@@ -88,7 +88,6 @@ ISR( TIMER0_COMPA_vect )
 	
 	if (turnOffCounter	> pinTimers[pinCounter].limitRest.limit)
 	{
-		
 		OCR0A = pinTimers[pinCounter].limitRest.rest;
 		PORTC &= ~(1<<pinTimers[pinCounter].pin);
 		
@@ -111,12 +110,38 @@ ISR( TIMER0_COMPA_vect )
 /*
 * Berechnet die Werte limit (Zahl der Timerzyklen) und rest (Wert des letzten Zyklus) anhand eines PWM-Werts.
 */
-struct LimitRest calculatePwm(uint8_t pwmlength) {
+struct LimitRest calculatePwm(uint8_t pwmlength/*, bool firstPWM*/) {
 	struct LimitRest result;
 	uint16_t limit;
 	uint8_t rest;
+	int length = 0;
 	
-	int length = 100 + ((100 * pwmlength) / 255);
+	//if(!firstPWM){
+		//length = 100 + ((100 * pwmlength) / 255);	
+	//}else{
+		length = ((100 * pwmlength) / 255);
+	//}
+	int number = 160 * length;
+	limit = number / 256;
+	rest = number % 256;
+	
+	result.limit = limit;
+	result.rest = rest;
+	
+	return result;
+}
+
+//todo: remove once calculatePwm uses bool
+/*
+* Berechnet die Werte limit (Zahl der Timerzyklen) und rest (Wert des letzten Zyklus) anhand eines PWM-Werts.
+*/
+struct LimitRest calculateFirstPwm(uint8_t pwmlength) {
+	struct LimitRest result;
+	uint16_t limit;
+	uint8_t rest;
+	int length;
+	
+	length = 100 + ((100 * pwmlength) / 255);
 	int number = 160 * length;
 	limit = number / 256;
 	rest = number % 256;
@@ -156,9 +181,13 @@ struct PinTimer* loadTimerValues(void) {
 		
 		if (i > 0) {
 			partialPwm = partialPwm - pwmlengths[i - 1].pwmlength;
+			//result[i].limitRest = calculatePwm(partialPwm, false);	
+			result[i].limitRest = calculatePwm(partialPwm);
+		}else{
+			//result[i].limitRest = calculatePwm(partialPwm, true);
+			result[i].limitRest = calculateFirstPwm(partialPwm);
 		}
 		
-		result[i].limitRest = calculatePwm(partialPwm);
 		result[i].pin = pwmlengths[i].pin;
 	}
 	
