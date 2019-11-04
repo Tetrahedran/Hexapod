@@ -43,7 +43,7 @@ int main (void)
 	//Initialisierung 50ms timer
 	TCCR2A = (1<<WGM01);
 	TCCR2B = (1<<CS20);
-	TIMSK2 |= (1<<OCIE0A);
+	TIMSK2 |= (1<<OCIE2A);
 	OCR2A = 255;
 	
 	//Initialisierung variabler PWM-Timer
@@ -61,7 +61,10 @@ int main (void)
 	}
 	
 	while (1) {
-		
+		struct PinTimer *pTimerVals = loadTimerValues();
+		for(uint8_t x = 0; x < 6; x++) {
+			pinTimers[x] = *(pTimerVals + x);
+		}	
 	}
 	return 0;
 }
@@ -70,16 +73,11 @@ ISR( TIMER2_COMPA_vect )
 {
 	turnOnCounter++;
 	OCR2A = 255;
-	if (turnOnCounter >= 1250)
+	if (turnOnCounter >= 3125)
 	{
 		TCCR0B |= (1<<CS00);
 		turnOnCounter = 0;
-		PORTB = 0x3F; // 0011 1111
-		
-		struct PinTimer *pTimerVals = loadTimerValues();
-		for(uint8_t x = 0; x < 6; x++) {
-			pinTimers[x] = *(pTimerVals + x);
-		}
+		PORTB = 0x3f; // 0011 1111
 	}
 }
 
