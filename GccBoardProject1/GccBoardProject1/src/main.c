@@ -10,14 +10,14 @@ volatile uint8_t rest = 0;
 int main (void)
 {
 	DDRB = 0xff;
-	PORTB = 0xff;
+	PORTB = 0x00;
 	//DDRD = 0xff;
 	DDRA = 0x00;
 	PINA = 0x00;
 	DDRC = 0xff;
 	TCCR2A = (1<<WGM01);
 	TCCR2B = (1<<CS20);
-	TIMSK2 |= (1<<OCIE0A);
+	TIMSK2 |= (1<<OCIE2A);
 	OCR2A = 255;
 	TCCR0A = (1<<WGM01);
 	TCCR0B = (0<<CS00);
@@ -25,11 +25,11 @@ int main (void)
 	OCR0A = 255;
 	sei();
 	while (1) {
+		pwmlength = ~PINA;
 		uint16_t length = 100 + (100 * pwmlength / 255);
 		uint16_t number = 160 * length;
 		limit = number / 256;
 		rest = number % 256;
-		pwmlength = ~PINA;
 	}
 	return 0;
 }
@@ -42,7 +42,7 @@ ISR( TIMER2_COMPA_vect )
 	{		
 		TCCR0B = (1<<CS00);
 		counter2 = 0;
-		PORTC = ~PORTC;
+		PORTB = ~PORTB;
 		//PORTD = ~PORTD;
 	}
 }
@@ -55,7 +55,7 @@ ISR( TIMER0_COMPA_vect )
 	{
 		OCR0A = rest;
 		counter = 0;
-		PORTC = ~PORTC;
+		PORTB = ~PORTB;
 		//PORTD = ~PORTD;
 		TCCR0B = (0<<CS00);
 	}

@@ -3,33 +3,33 @@ GccBoardProject1.elf:     file format elf32-avr
 
 Sections:
 Idx Name          Size      VMA       LMA       File off  Algn
-  0 .data         00000000  00800100  00800100  00000186  2**0
+  0 .data         00000000  00800100  00800100  0000028c  2**0
                   CONTENTS, ALLOC, LOAD, DATA
-  1 .text         00000112  00000000  00000000  00000074  2**1
+  1 .text         00000218  00000000  00000000  00000074  2**1
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
-  2 .bss          00000002  00800100  00800100  00000186  2**0
+  2 .bss          00000008  00800100  00800100  0000028c  2**0
                   ALLOC
-  3 .comment      00000030  00000000  00000000  00000186  2**0
+  3 .comment      00000030  00000000  00000000  0000028c  2**0
                   CONTENTS, READONLY
-  4 .note.gnu.avr.deviceinfo 0000003c  00000000  00000000  000001b8  2**2
+  4 .note.gnu.avr.deviceinfo 0000003c  00000000  00000000  000002bc  2**2
                   CONTENTS, READONLY
-  5 .debug_aranges 00000028  00000000  00000000  000001f4  2**0
+  5 .debug_aranges 00000030  00000000  00000000  000002f8  2**0
                   CONTENTS, READONLY, DEBUGGING
-  6 .debug_info   00000736  00000000  00000000  0000021c  2**0
+  6 .debug_info   000007c9  00000000  00000000  00000328  2**0
                   CONTENTS, READONLY, DEBUGGING
-  7 .debug_abbrev 000006a2  00000000  00000000  00000952  2**0
+  7 .debug_abbrev 000006cb  00000000  00000000  00000af1  2**0
                   CONTENTS, READONLY, DEBUGGING
-  8 .debug_line   00000516  00000000  00000000  00000ff4  2**0
+  8 .debug_line   000005d6  00000000  00000000  000011bc  2**0
                   CONTENTS, READONLY, DEBUGGING
-  9 .debug_frame  00000050  00000000  00000000  0000150c  2**2
+  9 .debug_frame  00000080  00000000  00000000  00001794  2**2
                   CONTENTS, READONLY, DEBUGGING
- 10 .debug_str    000100af  00000000  00000000  0000155c  2**0
+ 10 .debug_str    00010104  00000000  00000000  00001814  2**0
                   CONTENTS, READONLY, DEBUGGING
- 11 .debug_loc    00000056  00000000  00000000  0001160b  2**0
+ 11 .debug_loc    000000d9  00000000  00000000  00011918  2**0
                   CONTENTS, READONLY, DEBUGGING
- 12 .debug_ranges 00000018  00000000  00000000  00011661  2**0
+ 12 .debug_ranges 00000020  00000000  00000000  000119f1  2**0
                   CONTENTS, READONLY, DEBUGGING
- 13 .debug_macro  00000152  00000000  00000000  00011679  2**0
+ 13 .debug_macro  00000158  00000000  00000000  00011a11  2**0
                   CONTENTS, READONLY, DEBUGGING
 
 Disassembly of section .text:
@@ -53,7 +53,7 @@ Disassembly of section .text:
   1e:	00 00       	nop
   20:	37 c0       	rjmp	.+110    	; 0x90 <__bad_interrupt>
   22:	00 00       	nop
-  24:	35 c0       	rjmp	.+106    	; 0x90 <__bad_interrupt>
+  24:	71 c0       	rjmp	.+226    	; 0x108 <__vector_9>
   26:	00 00       	nop
   28:	33 c0       	rjmp	.+102    	; 0x90 <__bad_interrupt>
   2a:	00 00       	nop
@@ -67,7 +67,7 @@ Disassembly of section .text:
   3a:	00 00       	nop
   3c:	29 c0       	rjmp	.+82     	; 0x90 <__bad_interrupt>
   3e:	00 00       	nop
-  40:	38 c0       	rjmp	.+112    	; 0xb2 <__vector_16>
+  40:	8f c0       	rjmp	.+286    	; 0x160 <__vector_16>
   42:	00 00       	nop
   44:	25 c0       	rjmp	.+74     	; 0x90 <__bad_interrupt>
   46:	00 00       	nop
@@ -110,104 +110,266 @@ Disassembly of section .text:
   84:	1d 92       	st	X+, r1
 
 00000086 <.do_clear_bss_start>:
-  86:	a2 30       	cpi	r26, 0x02	; 2
+  86:	a8 30       	cpi	r26, 0x08	; 8
   88:	b2 07       	cpc	r27, r18
   8a:	e1 f7       	brne	.-8      	; 0x84 <.do_clear_bss_loop>
   8c:	02 d0       	rcall	.+4      	; 0x92 <main>
-  8e:	3f c0       	rjmp	.+126    	; 0x10e <_exit>
+  8e:	c2 c0       	rjmp	.+388    	; 0x214 <_exit>
 
 00000090 <__bad_interrupt>:
   90:	b7 cf       	rjmp	.-146    	; 0x0 <__vectors>
 
 00000092 <main>:
-
-volatile uint16_t counter = 0;
+volatile uint16_t limit = 0;
+volatile uint8_t rest = 0;
 
 int main (void)
 {
-	DDRD = 0xff;
+	DDRB = 0xff;
   92:	8f ef       	ldi	r24, 0xFF	; 255
-  94:	8a b9       	out	0x0a, r24	; 10
+  94:	84 b9       	out	0x04, r24	; 4
+	PORTB = 0x00;
+  96:	15 b8       	out	0x05, r1	; 5
+	//DDRD = 0xff;
 	DDRA = 0x00;
-  96:	11 b8       	out	0x01, r1	; 1
+  98:	11 b8       	out	0x01, r1	; 1
+	PINA = 0x00;
+  9a:	10 b8       	out	0x00, r1	; 0
 	DDRC = 0xff;
-  98:	87 b9       	out	0x07, r24	; 7
+  9c:	87 b9       	out	0x07, r24	; 7
+	TCCR2A = (1<<WGM01);
+  9e:	22 e0       	ldi	r18, 0x02	; 2
+  a0:	20 93 b0 00 	sts	0x00B0, r18	; 0x8000b0 <__DATA_REGION_ORIGIN__+0x50>
+	TCCR2B = (1<<CS20);
+  a4:	91 e0       	ldi	r25, 0x01	; 1
+  a6:	90 93 b1 00 	sts	0x00B1, r25	; 0x8000b1 <__DATA_REGION_ORIGIN__+0x51>
+	TIMSK2 |= (1<<OCIE2A);
+  aa:	e0 e7       	ldi	r30, 0x70	; 112
+  ac:	f0 e0       	ldi	r31, 0x00	; 0
+  ae:	90 81       	ld	r25, Z
+  b0:	92 60       	ori	r25, 0x02	; 2
+  b2:	90 83       	st	Z, r25
+	OCR2A = 255;
+  b4:	80 93 b3 00 	sts	0x00B3, r24	; 0x8000b3 <__DATA_REGION_ORIGIN__+0x53>
 	TCCR0A = (1<<WGM01);
-  9a:	92 e0       	ldi	r25, 0x02	; 2
-  9c:	94 bd       	out	0x24, r25	; 36
-	TCCR0B = (1<<CS00);
-  9e:	91 e0       	ldi	r25, 0x01	; 1
-  a0:	95 bd       	out	0x25, r25	; 37
+  b8:	24 bd       	out	0x24, r18	; 36
+	TCCR0B = (0<<CS00);
+  ba:	15 bc       	out	0x25, r1	; 37
 	TIMSK0 |= (1<<OCIE0A);
-  a2:	ee e6       	ldi	r30, 0x6E	; 110
-  a4:	f0 e0       	ldi	r31, 0x00	; 0
-  a6:	90 81       	ld	r25, Z
-  a8:	92 60       	ori	r25, 0x02	; 2
-  aa:	90 83       	st	Z, r25
+  bc:	ee e6       	ldi	r30, 0x6E	; 110
+  be:	f0 e0       	ldi	r31, 0x00	; 0
+  c0:	90 81       	ld	r25, Z
+  c2:	92 60       	ori	r25, 0x02	; 2
+  c4:	90 83       	st	Z, r25
 	OCR0A = 255;
-  ac:	87 bd       	out	0x27, r24	; 39
+  c6:	87 bd       	out	0x27, r24	; 39
 	sei();
-  ae:	78 94       	sei
-  b0:	ff cf       	rjmp	.-2      	; 0xb0 <main+0x1e>
+  c8:	78 94       	sei
+	while (1) {
+		pwmlength = ~PINA;
+		uint16_t length = 100 + (100 * pwmlength / 255);
+		uint16_t number = 160 * length;
+  ca:	c4 e6       	ldi	r28, 0x64	; 100
+  cc:	ef ef       	ldi	r30, 0xFF	; 255
+  ce:	f0 e0       	ldi	r31, 0x00	; 0
+  d0:	40 ea       	ldi	r20, 0xA0	; 160
+	TCCR0B = (0<<CS00);
+	TIMSK0 |= (1<<OCIE0A);
+	OCR0A = 255;
+	sei();
+	while (1) {
+		pwmlength = ~PINA;
+  d2:	80 b1       	in	r24, 0x00	; 0
+  d4:	80 95       	com	r24
+  d6:	80 93 03 01 	sts	0x0103, r24	; 0x800103 <pwmlength>
+		uint16_t length = 100 + (100 * pwmlength / 255);
+  da:	80 91 03 01 	lds	r24, 0x0103	; 0x800103 <pwmlength>
+		uint16_t number = 160 * length;
+  de:	c8 9f       	mul	r28, r24
+  e0:	c0 01       	movw	r24, r0
+  e2:	11 24       	eor	r1, r1
+  e4:	bf 01       	movw	r22, r30
+  e6:	6f d0       	rcall	.+222    	; 0x1c6 <__divmodhi4>
+  e8:	6c 59       	subi	r22, 0x9C	; 156
+  ea:	7f 4f       	sbci	r23, 0xFF	; 255
+  ec:	46 9f       	mul	r20, r22
+  ee:	c0 01       	movw	r24, r0
+  f0:	47 9f       	mul	r20, r23
+  f2:	90 0d       	add	r25, r0
+  f4:	11 24       	eor	r1, r1
+		limit = number / 256;
+  f6:	29 2f       	mov	r18, r25
+  f8:	33 27       	eor	r19, r19
+  fa:	30 93 02 01 	sts	0x0102, r19	; 0x800102 <limit+0x1>
+  fe:	20 93 01 01 	sts	0x0101, r18	; 0x800101 <limit>
+		rest = number % 256;
+ 102:	80 93 00 01 	sts	0x0100, r24	; 0x800100 <_edata>
+ 106:	e5 cf       	rjmp	.-54     	; 0xd2 <main+0x40>
 
-000000b2 <__vector_16>:
+00000108 <__vector_9>:
 	}
 	return 0;
 }
 
-ISR( TIMER0_COMPA_vect )
+ISR( TIMER2_COMPA_vect )
 {
-  b2:	1f 92       	push	r1
-  b4:	0f 92       	push	r0
-  b6:	0f b6       	in	r0, 0x3f	; 63
-  b8:	0f 92       	push	r0
-  ba:	11 24       	eor	r1, r1
-  bc:	2f 93       	push	r18
-  be:	8f 93       	push	r24
-  c0:	9f 93       	push	r25
-	counter++;
-  c2:	80 91 00 01 	lds	r24, 0x0100	; 0x800100 <_edata>
-  c6:	90 91 01 01 	lds	r25, 0x0101	; 0x800101 <_edata+0x1>
-  ca:	01 96       	adiw	r24, 0x01	; 1
-  cc:	90 93 01 01 	sts	0x0101, r25	; 0x800101 <_edata+0x1>
-  d0:	80 93 00 01 	sts	0x0100, r24	; 0x800100 <_edata>
-	OCR0A = 255;
-  d4:	8f ef       	ldi	r24, 0xFF	; 255
-  d6:	87 bd       	out	0x27, r24	; 39
-	if (counter	> 714)
-  d8:	80 91 00 01 	lds	r24, 0x0100	; 0x800100 <_edata>
-  dc:	90 91 01 01 	lds	r25, 0x0101	; 0x800101 <_edata+0x1>
-  e0:	8b 3c       	cpi	r24, 0xCB	; 203
-  e2:	92 40       	sbci	r25, 0x02	; 2
-  e4:	60 f0       	brcs	.+24     	; 0xfe <__vector_16+0x4c>
-	{
-		OCR0A = 255;
-  e6:	8f ef       	ldi	r24, 0xFF	; 255
-  e8:	87 bd       	out	0x27, r24	; 39
-		counter = 0;
-  ea:	10 92 01 01 	sts	0x0101, r1	; 0x800101 <_edata+0x1>
-  ee:	10 92 00 01 	sts	0x0100, r1	; 0x800100 <_edata>
-		PORTC = ~PORTC;
-  f2:	88 b1       	in	r24, 0x08	; 8
-  f4:	80 95       	com	r24
-  f6:	88 b9       	out	0x08, r24	; 8
-		PORTD = ~PORTD;
-  f8:	8b b1       	in	r24, 0x0b	; 11
-  fa:	80 95       	com	r24
-  fc:	8b b9       	out	0x0b, r24	; 11
+ 108:	1f 92       	push	r1
+ 10a:	0f 92       	push	r0
+ 10c:	0f b6       	in	r0, 0x3f	; 63
+ 10e:	0f 92       	push	r0
+ 110:	11 24       	eor	r1, r1
+ 112:	2f 93       	push	r18
+ 114:	8f 93       	push	r24
+ 116:	9f 93       	push	r25
+	counter2++;
+ 118:	80 91 04 01 	lds	r24, 0x0104	; 0x800104 <counter2>
+ 11c:	90 91 05 01 	lds	r25, 0x0105	; 0x800105 <counter2+0x1>
+ 120:	01 96       	adiw	r24, 0x01	; 1
+ 122:	90 93 05 01 	sts	0x0105, r25	; 0x800105 <counter2+0x1>
+ 126:	80 93 04 01 	sts	0x0104, r24	; 0x800104 <counter2>
+	OCR2A = 255;
+ 12a:	8f ef       	ldi	r24, 0xFF	; 255
+ 12c:	80 93 b3 00 	sts	0x00B3, r24	; 0x8000b3 <__DATA_REGION_ORIGIN__+0x53>
+	if (counter2 >= 1250)
+ 130:	80 91 04 01 	lds	r24, 0x0104	; 0x800104 <counter2>
+ 134:	90 91 05 01 	lds	r25, 0x0105	; 0x800105 <counter2+0x1>
+ 138:	82 3e       	cpi	r24, 0xE2	; 226
+ 13a:	94 40       	sbci	r25, 0x04	; 4
+ 13c:	48 f0       	brcs	.+18     	; 0x150 <__vector_9+0x48>
+	{		
+		TCCR0B = (1<<CS00);
+ 13e:	81 e0       	ldi	r24, 0x01	; 1
+ 140:	85 bd       	out	0x25, r24	; 37
+		counter2 = 0;
+ 142:	10 92 05 01 	sts	0x0105, r1	; 0x800105 <counter2+0x1>
+ 146:	10 92 04 01 	sts	0x0104, r1	; 0x800104 <counter2>
+		PORTB = ~PORTB;
+ 14a:	85 b1       	in	r24, 0x05	; 5
+ 14c:	80 95       	com	r24
+ 14e:	85 b9       	out	0x05, r24	; 5
+		//PORTD = ~PORTD;
 	}
 }
-  fe:	9f 91       	pop	r25
- 100:	8f 91       	pop	r24
- 102:	2f 91       	pop	r18
- 104:	0f 90       	pop	r0
- 106:	0f be       	out	0x3f, r0	; 63
- 108:	0f 90       	pop	r0
- 10a:	1f 90       	pop	r1
- 10c:	18 95       	reti
+ 150:	9f 91       	pop	r25
+ 152:	8f 91       	pop	r24
+ 154:	2f 91       	pop	r18
+ 156:	0f 90       	pop	r0
+ 158:	0f be       	out	0x3f, r0	; 63
+ 15a:	0f 90       	pop	r0
+ 15c:	1f 90       	pop	r1
+ 15e:	18 95       	reti
 
-0000010e <_exit>:
- 10e:	f8 94       	cli
+00000160 <__vector_16>:
 
-00000110 <__stop_program>:
- 110:	ff cf       	rjmp	.-2      	; 0x110 <__stop_program>
+ISR( TIMER0_COMPA_vect )
+{
+ 160:	1f 92       	push	r1
+ 162:	0f 92       	push	r0
+ 164:	0f b6       	in	r0, 0x3f	; 63
+ 166:	0f 92       	push	r0
+ 168:	11 24       	eor	r1, r1
+ 16a:	2f 93       	push	r18
+ 16c:	3f 93       	push	r19
+ 16e:	8f 93       	push	r24
+ 170:	9f 93       	push	r25
+	counter++;
+ 172:	80 91 06 01 	lds	r24, 0x0106	; 0x800106 <counter>
+ 176:	90 91 07 01 	lds	r25, 0x0107	; 0x800107 <counter+0x1>
+ 17a:	01 96       	adiw	r24, 0x01	; 1
+ 17c:	90 93 07 01 	sts	0x0107, r25	; 0x800107 <counter+0x1>
+ 180:	80 93 06 01 	sts	0x0106, r24	; 0x800106 <counter>
+	OCR0A = 255;
+ 184:	8f ef       	ldi	r24, 0xFF	; 255
+ 186:	87 bd       	out	0x27, r24	; 39
+	if (counter	> limit)
+ 188:	20 91 06 01 	lds	r18, 0x0106	; 0x800106 <counter>
+ 18c:	30 91 07 01 	lds	r19, 0x0107	; 0x800107 <counter+0x1>
+ 190:	80 91 01 01 	lds	r24, 0x0101	; 0x800101 <limit>
+ 194:	90 91 02 01 	lds	r25, 0x0102	; 0x800102 <limit+0x1>
+ 198:	82 17       	cp	r24, r18
+ 19a:	93 07       	cpc	r25, r19
+ 19c:	58 f4       	brcc	.+22     	; 0x1b4 <__vector_16+0x54>
+	{
+		OCR0A = rest;
+ 19e:	80 91 00 01 	lds	r24, 0x0100	; 0x800100 <_edata>
+ 1a2:	87 bd       	out	0x27, r24	; 39
+		counter = 0;
+ 1a4:	10 92 07 01 	sts	0x0107, r1	; 0x800107 <counter+0x1>
+ 1a8:	10 92 06 01 	sts	0x0106, r1	; 0x800106 <counter>
+		PORTB = ~PORTB;
+ 1ac:	85 b1       	in	r24, 0x05	; 5
+ 1ae:	80 95       	com	r24
+ 1b0:	85 b9       	out	0x05, r24	; 5
+		//PORTD = ~PORTD;
+		TCCR0B = (0<<CS00);
+ 1b2:	15 bc       	out	0x25, r1	; 37
+	}
+}
+ 1b4:	9f 91       	pop	r25
+ 1b6:	8f 91       	pop	r24
+ 1b8:	3f 91       	pop	r19
+ 1ba:	2f 91       	pop	r18
+ 1bc:	0f 90       	pop	r0
+ 1be:	0f be       	out	0x3f, r0	; 63
+ 1c0:	0f 90       	pop	r0
+ 1c2:	1f 90       	pop	r1
+ 1c4:	18 95       	reti
+
+000001c6 <__divmodhi4>:
+ 1c6:	97 fb       	bst	r25, 7
+ 1c8:	07 2e       	mov	r0, r23
+ 1ca:	16 f4       	brtc	.+4      	; 0x1d0 <__divmodhi4+0xa>
+ 1cc:	00 94       	com	r0
+ 1ce:	06 d0       	rcall	.+12     	; 0x1dc <__divmodhi4_neg1>
+ 1d0:	77 fd       	sbrc	r23, 7
+ 1d2:	08 d0       	rcall	.+16     	; 0x1e4 <__divmodhi4_neg2>
+ 1d4:	0b d0       	rcall	.+22     	; 0x1ec <__udivmodhi4>
+ 1d6:	07 fc       	sbrc	r0, 7
+ 1d8:	05 d0       	rcall	.+10     	; 0x1e4 <__divmodhi4_neg2>
+ 1da:	3e f4       	brtc	.+14     	; 0x1ea <__divmodhi4_exit>
+
+000001dc <__divmodhi4_neg1>:
+ 1dc:	90 95       	com	r25
+ 1de:	81 95       	neg	r24
+ 1e0:	9f 4f       	sbci	r25, 0xFF	; 255
+ 1e2:	08 95       	ret
+
+000001e4 <__divmodhi4_neg2>:
+ 1e4:	70 95       	com	r23
+ 1e6:	61 95       	neg	r22
+ 1e8:	7f 4f       	sbci	r23, 0xFF	; 255
+
+000001ea <__divmodhi4_exit>:
+ 1ea:	08 95       	ret
+
+000001ec <__udivmodhi4>:
+ 1ec:	aa 1b       	sub	r26, r26
+ 1ee:	bb 1b       	sub	r27, r27
+ 1f0:	51 e1       	ldi	r21, 0x11	; 17
+ 1f2:	07 c0       	rjmp	.+14     	; 0x202 <__udivmodhi4_ep>
+
+000001f4 <__udivmodhi4_loop>:
+ 1f4:	aa 1f       	adc	r26, r26
+ 1f6:	bb 1f       	adc	r27, r27
+ 1f8:	a6 17       	cp	r26, r22
+ 1fa:	b7 07       	cpc	r27, r23
+ 1fc:	10 f0       	brcs	.+4      	; 0x202 <__udivmodhi4_ep>
+ 1fe:	a6 1b       	sub	r26, r22
+ 200:	b7 0b       	sbc	r27, r23
+
+00000202 <__udivmodhi4_ep>:
+ 202:	88 1f       	adc	r24, r24
+ 204:	99 1f       	adc	r25, r25
+ 206:	5a 95       	dec	r21
+ 208:	a9 f7       	brne	.-22     	; 0x1f4 <__udivmodhi4_loop>
+ 20a:	80 95       	com	r24
+ 20c:	90 95       	com	r25
+ 20e:	bc 01       	movw	r22, r24
+ 210:	cd 01       	movw	r24, r26
+ 212:	08 95       	ret
+
+00000214 <_exit>:
+ 214:	f8 94       	cli
+
+00000216 <__stop_program>:
+ 216:	ff cf       	rjmp	.-2      	; 0x216 <__stop_program>
