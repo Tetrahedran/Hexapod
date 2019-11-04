@@ -17,6 +17,7 @@ struct PinTimer {
 
 struct LimitRest calculatePwm(uint8_t pwmLength);
 struct PinTimer* loadTimerValues(void);
+struct LimitRest calculateFirstPwm(uint8_t pwmlength);
 
 volatile uint16_t turnOffCounter = 0;
 volatile uint16_t turnOnCounter = 0;
@@ -37,6 +38,7 @@ int main (void)
 	
 	//PWM Output
 	DDRC = 0xff;
+	PORTC = 0xff;
 	
 	//Initialisierung 50ms timer
 	TCCR2A = (1<<WGM01);
@@ -72,7 +74,7 @@ ISR( TIMER2_COMPA_vect )
 	{
 		TCCR0B |= (1<<CS00);
 		turnOnCounter = 0;
-		PORTC = 0x3F; // 0011 1111
+		PORTB = 0x3F; // 0011 1111
 		
 		struct PinTimer *pTimerVals = loadTimerValues();
 		for(uint8_t x = 0; x < 6; x++) {
@@ -89,12 +91,12 @@ ISR( TIMER0_COMPA_vect )
 	if (turnOffCounter	> pinTimers[pinCounter].limitRest.limit)
 	{
 		OCR0A = pinTimers[pinCounter].limitRest.rest;
-		PORTC &= ~(1<<pinTimers[pinCounter].pin);
+		PORTB &= ~(1<<pinTimers[pinCounter].pin);
 		
 		turnOffCounter = 0;
 		if(pinCounter >= 5) {
 			pinCounter = 0;
-			PORTC = 0;
+			PORTB = 0;
 			TCCR0B = 0;
 		} else {
 			pinCounter++;
