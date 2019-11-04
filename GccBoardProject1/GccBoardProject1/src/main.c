@@ -28,17 +28,13 @@ volatile struct PinTimer pinTimers[6];
 
 int main (void)
 {
-	//Power Source
+	//PWM Source
 	DDRB = 0xff;
 	PORTB = 0xff;
 	
 	//Taster Input
 	DDRA = 0x00;
 	PINA = 0x00;
-	
-	//PWM Output
-	DDRC = 0xff;
-	PORTC = 0xff;
 	
 	//Initialisierung 50ms timer
 	TCCR2A = (1<<WGM01);
@@ -87,20 +83,24 @@ ISR( TIMER0_COMPA_vect )
 	OCR0A = 255;
 	
 	if (turnOffCounter	> pinTimers[pinCounter].limitRest.limit)
-	if(turnOffCounter > 125)
 	{
-		//OCR0A = pinTimers[pinCounter].limitRest.rest;
-		//PORTB &= ~(1<<pinTimers[pinCounter].pin);
-		PORTB = 0;
+		OCR0A = pinTimers[pinCounter].limitRest.rest;
+		PORTB &= ~(1<<pinTimers[pinCounter].pin);
 		
 		turnOffCounter = 0;
-		//if(pinCounter >= 5) {
-			//pinCounter = 0;
-			//PORTB = 0;
+		
+		for (;pinTimers[pinCounter].limitRest.limit == pinTimers[pinCounter + 1].limitRest.limit && pinCounter < 5; pinCounter++)
+		{
+			PORTB &= ~(1<<pinTimers[pinCounter + 1].pin);
+		}
+		
+		pinCounter++;
+				
+		if(pinCounter == 6) {
+			pinCounter = 0;
+			PORTB = 0;
 			TCCR0B = 0;
-		//} else {
-			//pinCounter++;
-		//}
+		}
 	}
 }
 
@@ -113,9 +113,9 @@ struct LimitRest calculatePwm(uint8_t pwmlength, bool firstPWM) {
 	uint8_t rest;
 	int length = 0;
 	
-	if(!firstPWM){
+	if(firstPWM){
 		length = 100 + ((100 * pwmlength) / 255);
-		}else{
+	}else{
 		length = ((100 * pwmlength) / 255);
 	}
 	int number = 160 * length;
@@ -125,6 +125,7 @@ struct LimitRest calculatePwm(uint8_t pwmlength, bool firstPWM) {
 	result.limit = limit;
 	result.rest = rest;
 	
+	
 	return result;
 }
 
@@ -133,18 +134,18 @@ struct LimitRest calculatePwm(uint8_t pwmlength, bool firstPWM) {
 */
 struct PinTimer* loadTimerValues(void) {
 	static struct PinTimer result[6];
-	static struct Pwmlength pwmlengths[6];
+	//static struct Pwmlength pwmlengths[6];
 	//trans.z += 0.01f;
-	float* angles = calcMotorAngles(trans, (struct Quaternion) {1.0f, 0.0f, 0.0f, 0.0f});
+	/*float* angles = calcMotorAngles(trans, (struct Quaternion) {1.0f, 0.0f, 0.0f, 0.0f});
 	for (short i = 0; i < 6; i++)
 	{
 		float angle = *(angles + i);
 		uint8_t pwm = (angle + M_PI) / (2.0f * M_PI) * 255;
 		pwmlengths[i] = (struct Pwmlength) {pwm, i};
-	}
+	}*/
 	
 	//Beispielwerte
-	//struct Pwmlength pwmlengths[6] = {{240, 0}, {55, 1}, {80, 2}, {100, 3}, {10, 4}, {100, 5}};
+	struct Pwmlength pwmlengths[6] = {{128, 0}, {128, 1}, {128, 2}, {128, 3}, {128, 4}, {128, 5}};
 	
 	struct Pwmlength *pPwm = sort(pwmlengths);
 	
@@ -154,11 +155,10 @@ struct PinTimer* loadTimerValues(void) {
 	
 	for (uint8_t i = 0; i < 6; i++) {
 		uint8_t partialPwm = pwmlengths[i].pwmlength;
-		
-		if (i > 0) {
+		if (i < 0) {
 			partialPwm = partialPwm - pwmlengths[i - 1].pwmlength;
 			result[i].limitRest = calculatePwm(partialPwm, false);
-		}else{
+		}else {
 			result[i].limitRest = calculatePwm(partialPwm, true);
 		}
 		
