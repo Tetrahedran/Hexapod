@@ -66,7 +66,7 @@ void calcAnchorPositions(void)
 	anchorPositions[2] = add(Cp, multiply(CA, platPositionKoeff));
 	anchorPositions[3] = add(Bp, multiply(BC, inversePPosKoeff));
 	anchorPositions[4] = add(Bp, multiply(BC, platPositionKoeff));
-	anchorPositions[5] = add(Ap, multiply(Ab, inversePPosKoeff));
+	anchorPositions[5] = add(Ap, multiply(AB, inversePPosKoeff));
 }
 
 void calcMotorPositions(void)
@@ -112,7 +112,7 @@ void calcTriangleCorner(void)
 	float umKreisRadiusP = 2.0f * innKreisRadiusP;
 	
 	Ap = (struct Vector){
-		0
+		0,
 		-umKreisRadiusP,
 		0
 	};

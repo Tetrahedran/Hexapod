@@ -40,7 +40,7 @@ float angle(struct Vector effectiveRodVector, float rodLength, float hornLength,
 }
 
 /*
-* Hilfswert eK für Motorwinkel
+* Hilfswert eK für Motorwinkel Richtig Berechnet
 */
 float eK(float hornLength, struct Vector effectiveRodVector)
 {
