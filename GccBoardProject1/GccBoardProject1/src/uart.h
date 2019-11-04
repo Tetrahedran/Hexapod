@@ -9,7 +9,7 @@
 
 #ifndef F_CPU
 #warning "F_CPU is still not defined, now is set with 20000000UL"
-#define F_CPU 20000000UL    // Systemclock in Hz
+#define F_CPU 16000000UL    // Systemclock in Hz
 //#define F_CPU 3686400UL    // Systemclock in Hz
 // attention on definition as unsigned long
 // without UL an error occurs during the calculation.
