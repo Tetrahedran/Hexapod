@@ -22,7 +22,7 @@ struct LimitRest calculateFirstPwm(uint8_t pwmlength);
 volatile uint16_t turnOffCounter = 0;
 volatile uint16_t turnOnCounter = 0;
 volatile uint8_t pinCounter = 0; //Zählt, welcher Wert in pinTimers als nächstes gelesen wird
-volatile struct Vector trans = (struct Vector) {0.0f, 0.0f, 0.1};
+volatile struct Vector trans = (struct Vector) {0.0f, 0.0f, 0.085f};
 
 volatile struct PinTimer pinTimers[6];
 
@@ -52,11 +52,30 @@ int main (void)
 		pinTimers[x] = *(pTimerVals + x);
 	}
 	
+	int i = 0;
+	int j = 0;
 	while (1) {
 		struct PinTimer *pTimerVals = loadTimerValues();
 		for(uint8_t x = 0; x < 6; x++) {
 			pinTimers[x] = *(pTimerVals + x);
-		}	
+		}
+		i++;
+		if ((i % 50) == 0)
+		{
+			j++;
+			if (j % 3 == 0)
+			{
+				trans.y = -0.02f;
+			}
+			else if (j % 3 == 1)
+			{
+				trans.y = 0.0f;
+			}
+			else {
+				trans.y = 0.02f;
+			}
+		}
+			
 	}
 	return 0;
 }
@@ -131,15 +150,7 @@ struct LimitRest calculatePwm(uint8_t pwmlength, bool firstPWM) {
 struct PinTimer* loadTimerValues(void) {
 	static struct PinTimer result[6];
 	static struct Pwmlength pwmlengths[6];
-	/*float delta = 0.0001f;
-	bool upLimit = false;
-	if(trans.z >= 0.1f){
-		upLimit = true;
-	}
-	if(trans.z <= 0.08f){
-		upLimit = false;
-	}
-	trans.z += upLimit ? -delta : delta;*/
+	float delta = 0.0005f;
 	float* angles = calcMotorAngles(trans, (struct Quaternion) {1.0f, 0.0f, 0.0f, 0.0f});
 	for (uint8_t i = 0; i < 6; i++)
 	{
