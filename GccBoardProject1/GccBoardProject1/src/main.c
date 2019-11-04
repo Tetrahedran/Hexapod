@@ -4,6 +4,8 @@
 #include "hexapod.h"
 #include "hexpod_constants.h"
 #include "sort.h"
+#include "uart.h"
+#include <util/delay.h>
 
 struct LimitRest {
 	uint16_t limit;
@@ -28,6 +30,10 @@ volatile struct PinTimer pinTimers[6];
 
 int main (void)
 {
+	_delay_ms(100);
+	
+	init_uart();
+	
 	//Power Source
 	DDRB = 0xff;
 	PORTB = 0xff;
