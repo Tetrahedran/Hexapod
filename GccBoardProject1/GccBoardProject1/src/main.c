@@ -87,18 +87,20 @@ ISR( TIMER0_COMPA_vect )
 	OCR0A = 255;
 	
 	if (turnOffCounter	> pinTimers[pinCounter].limitRest.limit)
+	if(turnOffCounter > 125)
 	{
-		OCR0A = pinTimers[pinCounter].limitRest.rest;
-		PORTB &= ~(1<<pinTimers[pinCounter].pin);
+		//OCR0A = pinTimers[pinCounter].limitRest.rest;
+		//PORTB &= ~(1<<pinTimers[pinCounter].pin);
+		PORTB = 0;
 		
 		turnOffCounter = 0;
-		if(pinCounter >= 5) {
-			pinCounter = 0;
-			PORTB = 0;
+		//if(pinCounter >= 5) {
+			//pinCounter = 0;
+			//PORTB = 0;
 			TCCR0B = 0;
-		} else {
-			pinCounter++;
-		}
+		//} else {
+			//pinCounter++;
+		//}
 	}
 }
 
