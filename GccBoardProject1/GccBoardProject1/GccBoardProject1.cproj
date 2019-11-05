@@ -63,7 +63,7 @@
         <board id="board.user_board.mega" value="Add" config="" content-id="Atmel.ASF" />
       </framework-data>
     </AsfFrameworkConfig>
-    <avrtool>com.atmel.avrdbg.tool.simulator</avrtool>
+    <avrtool>com.atmel.avrdbg.tool.stk500</avrtool>
     <avrtoolserialnumber />
     <avrdeviceexpectedsignature>0x1E9609</avrdeviceexpectedsignature>
     <custom>
@@ -83,7 +83,8 @@
       <ToolOptions>
         <InterfaceProperties>
         </InterfaceProperties>
-        <InterfaceName>ISP</InterfaceName>
+        <InterfaceName>
+        </InterfaceName>
       </ToolOptions>
       <ToolType>com.atmel.avrdbg.tool.simulator</ToolType>
       <ToolNumber>
@@ -93,7 +94,7 @@
     <com_atmel_avrdbg_tool_stk500>
       <ToolOptions>
         <InterfaceProperties>
-          <IspClock>0</IspClock>
+          <IspClock>125000</IspClock>
         </InterfaceProperties>
         <InterfaceName>ISP</InterfaceName>
       </ToolOptions>
@@ -102,7 +103,7 @@
       </ToolNumber>
       <ToolName>STK500</ToolName>
     </com_atmel_avrdbg_tool_stk500>
-    <avrtoolinterfaceclock>0</avrtoolinterfaceclock>
+    <avrtoolinterfaceclock>125000</avrtoolinterfaceclock>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <ToolchainSettings>
@@ -186,7 +187,6 @@
             <Value>../src/config</Value>
           </ListValues>
         </avrgcc.compiler.directories.IncludePaths>
-        <avrgcc.compiler.optimization.level>Optimize (-O1)</avrgcc.compiler.optimization.level>
         <avrgcc.compiler.optimization.OtherFlags>-fdata-sections</avrgcc.compiler.optimization.OtherFlags>
         <avrgcc.compiler.optimization.PackStructureMembers>True</avrgcc.compiler.optimization.PackStructureMembers>
         <avrgcc.compiler.optimization.AllocateBytesNeededForEnum>True</avrgcc.compiler.optimization.AllocateBytesNeededForEnum>

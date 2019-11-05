@@ -19,7 +19,7 @@ float angle(struct Vector effectiveRodVector, float rodLength, float hornLength,
 */
 float* calcMotorAngles(struct Vector absTranslation, struct Quaternion absRotation)
 {
-	float sollWinkel[6];
+	static float sollWinkel[6];
 	for (short i = 0; i < 6; i++)
 	{
 		struct Vector effectiveRod = calcEffectiveRodLength(absTranslation, absRotation, motorPositions[i], anchorPositions[i]);
@@ -40,7 +40,7 @@ float angle(struct Vector effectiveRodVector, float rodLength, float hornLength,
 }
 
 /*
-* Hilfswert eK für Motorwinkel
+* Hilfswert eK für Motorwinkel Richtig Berechnet
 */
 float eK(float hornLength, struct Vector effectiveRodVector)
 {
