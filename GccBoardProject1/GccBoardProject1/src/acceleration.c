@@ -4,14 +4,14 @@
 float accToAngle(float acc);
 
 const float g = 9.81f;
-const float maxAcc = 0.70710678118f * g;
+const float maxAcc = 0.70710678118f * 9.81f;
 
 struct Quaternion accelerationsToAngles(float accelerationX, float accelerationY) {
 	float angleX = accToAngle(accelerationX);
 	float angleY = accToAngle(accelerationX);
 	
-	struct Quaternion qX = quatForRot((struct Vector) {1.0f, 0.0f, 0,0f}, angleX);
-	struct Quaternion qY = quatForRot((struct Vector) {0.0f, 1.0f, 0,0f}, angleY);
+	struct Quaternion qX = quatForRot((struct Vector) {1.0f, 0.0f, 0.0f}, angleX);
+	struct Quaternion qY = quatForRot((struct Vector) {0.0f, 1.0f, 0.0f}, angleY);
 
 	return hamiltonP(qX, qY);
 }

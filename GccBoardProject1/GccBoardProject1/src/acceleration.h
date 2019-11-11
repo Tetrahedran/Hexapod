@@ -3,6 +3,6 @@
 #include "vector.h"
 #include "quaternion.h"
 
-struct Quaternion accelerationToAngle(float accelerationX, float accelerationY);
+struct Quaternion accelerationsToAngles(float accelerationX, float accelerationY);
 
 #endif
