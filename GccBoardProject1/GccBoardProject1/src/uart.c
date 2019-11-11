@@ -10,15 +10,26 @@
 #include <stdio.h>
 
 volatile uint8_t blockReceivingUSARTchar_Flag = 0;
-volatile uint8_t protocolStringReadyToTransformFlag;
+volatile uint8_t uartStringReadyToTransformFlag;
+volatile uint8_t uartStringReadyToRead = 1;
+volatile unsigned char uartReceivedChar; 
+volatile uint8_t charIsOk;
+volatile uint8_t receivedDataCounter;
+volatile unsigned char tempUartString[8];
+volatile unsigned char dataUartString[6]; //pitch, roll, yaw, long, lateral, vertical
+volatile unsigned char startUartString[6] = {177,177,177,177,177,177};
 
 void init_uart(void){
+	memcpy(dataUartString, startUartString, sizeof(dataUartString));
 	//Set Baudrate
 	UBRR0H = (unsigned char)(UBRR_VAL>>8);
 	UBRR0L = (unsigned char)(UBRR_VAL);
 	
+	receivedDataCounter = 0;
+	charIsOk = 1;
+	
 	/* Enable receiver and transmitter */
-	UCSR0B = (1<<TXEN0) | (1<<RXEN0);// | (1<<RXCIE0);      // tx & rx enable
+	UCSR0B = (1<<RXEN0);// | (1<<RXCIE0);      // rx enable
 	UCSR0B |= (1<<RXCIE0); //interrupt enable
 	UCSR0A |= (1<<RXC0);
 	/* Asynchronous USART, Data bits = 8, Parity = none, Stop bits = 1 */
@@ -26,7 +37,6 @@ void init_uart(void){
 	
 	/*  Override general io pins for usart rx/tx */
 	USART_PORT &= ~_BV(USART_RX);
-	USART_PORT |= _BV(USART_TX);
 }
 
 
@@ -75,8 +85,7 @@ char USARTReadChar(){
 char readCharIfAvailible(){
 	//Wait until a data is available
 
-	if(!(UCSR0A & (1<<RXC0))){
-		//Do nothing		
+	if(!(UCSR0A & (1<<RXC0))){	
 		return UDR0;
 	}else{
 		return (int) NULL;
@@ -110,21 +119,75 @@ void USART0_SetupInterrupts(void)
  * @return none
  */
 ISR(USART0_RX_vect) {
-	
-	//cli();//disable interupts - but its not sure thats helpfull - research
 		
 	if (blockReceivingUSARTchar_Flag == 0) {
 		//Main-workload: read char from register
-		//protocolChar = USARTReadChar(); //Check Datasheet: is a new char throwing away if no new one is accepted?
-		//
-		//readProtocolChar();//reads the protocol char by char from the BT interface
-		//if (protocolStringCounter >= 42){ //String is ready to be transformed
-			//protocolStringReadyToTransformFlag = 1; //String can now be checked in switch routine
-			//blockReceivingUSARTchar_Flag = 1;
-		//}//end: if (protocolStringCounter==42){
-	}//end:
+		uartReceivedChar = USARTReadChar(); //Check Datasheet: is a new char throwing away if no new one is accepted?
 		
-	//sei();
+		readReceivedChar(); 
+		if (receivedDataCounter >= 8){ //String is ready to be transformed
+			uartStringReadyToTransformFlag = 1; //String can now be checked in switch routine
+			blockReceivingUSARTchar_Flag = 1;
+			transformUartString();
+		}//end:
+	}//end:
+}
+
+void readReceivedChar()
+{
+	charIsOk = checkReceivedChar(uartReceivedChar, receivedDataCounter);
+	
+	if (charIsOk == 1)
+	{
+		tempUartString[receivedDataCounter] = uartReceivedChar;
+		receivedDataCounter++;
+	}
+	else 
+	{
+		receivedDataCounter = 0;
+	}
+}
+
+uint8_t checkReceivedChar(char tempChar, int tempCounter)
+{
+	if (tempCounter == 0)
+	{
+		if (tempChar=='S')
+		{
+			return 1;
+		}
+		else 
+		{ 
+			return 0;
+		}
+	} else if ((tempCounter>0)&&(tempCounter<7))
+	{
+		return 1;
+	} else if (tempCounter==7)
+	{
+		if (tempChar=='E')
+		{
+			return 1;
+		} else 
+		{
+			return 0;
+		}
+	} else {return 0;}	
+}
+
+void transformUartString()
+{
+	if (uartStringReadyToTransformFlag == 1)
+	{	
+		uartStringReadyToRead = 0;
+		for (int i=1; i<7; i++)
+		{
+			dataUartString[i-1] = tempUartString[i];
+		}
+		uartStringReadyToRead = 1;
+		uartStringReadyToTransformFlag = 0;
+		blockReceivingUSARTchar_Flag = 0;
+	}
 }
 
 /* reverse:  reverse string s in place */
