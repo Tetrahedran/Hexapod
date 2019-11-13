@@ -22,7 +22,7 @@ struct LimitRest calculateFirstPwm(uint8_t pwmlength);
 volatile uint16_t turnOffCounter = 0;
 volatile uint16_t turnOnCounter = 0;
 volatile uint8_t pinCounter = 0; //Zählt, welcher Wert in pinTimers als nächstes gelesen wird
-volatile struct Vector trans = (struct Vector) {0.0f, 0.0f, 0.085f};
+volatile struct Vector trans = (struct Vector) {0.0f, 0.0f, 0.0896f};
 
 volatile struct PinTimer pinTimers[6];
 
@@ -45,7 +45,7 @@ int main (void)
 	OCR0A = 255;
 	sei();
 	
-	initialize(0.25f, 0.23f, 0.0925f, 0.015f, 0.425f, 0.39f);
+	initialize(0.25f, 0.23f, 0.1f, 0.015f, 0.425f, 0.39f);
 	
 	struct PinTimer *pTimerVals = loadTimerValues();
 	for(uint8_t x = 0; x < 6; x++) {
@@ -65,14 +65,19 @@ int main (void)
 			j++;
 			if (j % 3 == 0)
 			{
-				trans.y = -0.02f;
+				trans.y = -0.03f;
 			}
 			else if (j % 3 == 1)
 			{
 				trans.y = 0.0f;
 			}
+			else if(j % 3 == 2)
+			{
+				trans.y = 0.03f;
+			}
 			else {
-				trans.y = 0.02f;
+				trans.y = 0.0f;
+				j = -1;
 			}
 		}
 			
@@ -150,7 +155,6 @@ struct LimitRest calculatePwm(uint8_t pwmlength, bool firstPWM) {
 struct PinTimer* loadTimerValues(void) {
 	static struct PinTimer result[6];
 	static struct Pwmlength pwmlengths[6];
-	float delta = 0.0005f;
 	float* angles = calcMotorAngles(trans, (struct Quaternion) {1.0f, 0.0f, 0.0f, 0.0f});
 	for (uint8_t i = 0; i < 6; i++)
 	{
