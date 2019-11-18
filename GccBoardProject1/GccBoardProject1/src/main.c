@@ -4,6 +4,7 @@
 #include "hexapod.h"
 #include "hexpod_constants.h"
 #include "sort.h"
+#include "acceleration.h"
 
 struct LimitRest {
 	uint16_t limit;
@@ -54,6 +55,7 @@ int main (void)
 	
 	int i = 0;
 	int j = 0;
+	
 	while (1) {
 		struct PinTimer *pTimerVals = loadTimerValues();
 		for(uint8_t x = 0; x < 6; x++) {
