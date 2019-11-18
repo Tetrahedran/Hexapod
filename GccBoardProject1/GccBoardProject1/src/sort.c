@@ -1,8 +1,8 @@
 #include "sort.h"
 
-struct Pwmlength* quicksort(struct Pwmlength pwmlengths[6],uint8_t first,uint8_t last);
+struct Pwmlength* quicksort(struct Pwmlength pwmlengths[6],int8_t first,int8_t last);
 
-struct Pwmlength* quicksort(struct Pwmlength pwmlengths[6],uint8_t first,uint8_t last)
+struct Pwmlength* quicksort(struct Pwmlength pwmlengths[6],int8_t first,int8_t last)
 {
 	uint8_t i, j, pivot;
 	struct Pwmlength temp;
