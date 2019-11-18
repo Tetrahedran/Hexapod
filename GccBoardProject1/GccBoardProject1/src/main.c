@@ -19,13 +19,14 @@ struct PinTimer {
 };
 
 struct LimitRest calculatePwm(uint8_t pwmLength, bool firstPWM);
-struct PinTimer* loadTimerValues(void);
+struct PinTimer* loadTimerValues(struct Quaternion absRot);
 struct LimitRest calculateFirstPwm(uint8_t pwmlength);
+float convertToAccel(uint8_t relAcc);
 
 volatile uint16_t turnOffCounter = 0;
 volatile uint16_t turnOnCounter = 0;
 volatile uint8_t pinCounter = 0; //Zählt, welcher Wert in pinTimers als nächstes gelesen wird
-volatile struct Vector trans = (struct Vector) {0.0f, 0.0f, 0.0896f};
+volatile struct Vector trans = (struct Vector) {0.0f, 0.0f, 1.0f};
 
 volatile struct PinTimer pinTimers[6];
 
@@ -52,43 +53,25 @@ int main (void)
 	OCR0A = 255;
 	sei();
 	
-	initialize(0.25f, 0.23f, 0.1f, 0.015f, 0.425f, 0.39f);
+	initialize(1.0f, 1.0f, 1.0f, 1.0f, 0.5f, 0.5f);
 	
-	struct PinTimer *pTimerVals = loadTimerValues();
+	struct PinTimer *pTimerVals = loadTimerValues((struct Quaternion) {1,0,0,0});
 	for(uint8_t x = 0; x < 6; x++) {
 		pinTimers[x] = *(pTimerVals + x);
 	}
 	
-	int i = 0;
-	int j = 0;
-	
 	while (1) {
-		struct PinTimer *pTimerVals = loadTimerValues();
-		for(uint8_t x = 0; x < 6; x++) {
-			pinTimers[x] = *(pTimerVals + x);
-		}
-		i++;
-		if ((i % 50) == 0)
+		if (1 /*uartReadyToRead() == 1*/)
 		{
-			j++;
-			if (j % 3 == 0)
-			{
-				trans.y = -0.03f;
+			//float xAcc = convertToAccel(getValueAtPosition(3));
+			//float yAcc = convertToAccel(getValueAtPosition(4)); 
+			float xAcc = maxAcc;
+			float yAcc = 0.0f;
+			struct PinTimer *pTimerVals = loadTimerValues(accelerationsToAngles(xAcc, yAcc));
+			for(uint8_t x = 0; x < 6; x++) {
+				pinTimers[x] = *(pTimerVals + x);
 			}
-			else if (j % 3 == 1)
-			{
-				trans.y = 0.0f;
-			}
-			else if(j % 3 == 2)
-			{
-				trans.y = 0.03f;
-			}
-			else {
-				trans.y = 0.0f;
-				j = -1;
-			}
-		}
-			
+		}					
 	}
 	return 0;
 }
@@ -101,7 +84,7 @@ ISR( TIMER2_COMPA_vect )
 	{
 		TCCR0B |= (1<<CS00);
 		turnOnCounter = 0;
-		PORTA = 0x3f; // 0011 1111
+		PORTA = 0xff; // 0011 1111
 	}
 }
 
@@ -124,7 +107,7 @@ ISR( TIMER0_COMPA_vect )
 		
 		pinCounter++;
 				
-		if(pinCounter == 6) {
+		if(pinCounter >= 5) {
 			pinCounter = 0;
 			PORTA = 0;
 			TCCR0B = 0;
@@ -160,10 +143,10 @@ struct LimitRest calculatePwm(uint8_t pwmlength, bool firstPWM) {
 /*
 * Lädt und sortiert die Werte, die das Abschalten der Servomotor Pins bestimmen.
 */
-struct PinTimer* loadTimerValues(void) {
+struct PinTimer* loadTimerValues(struct Quaternion absRot) {
 	static struct PinTimer result[6];
 	static struct Pwmlength pwmlengths[6];
-	float* angles = calcMotorAngles(trans, (struct Quaternion) {1.0f, 0.0f, 0.0f, 0.0f});
+	float* angles = calcMotorAngles(trans, absRot);
 	for (uint8_t i = 0; i < 6; i++)
 	{
 		float angle = *(angles + i);
@@ -197,4 +180,9 @@ struct PinTimer* loadTimerValues(void) {
 	}
 	
 	return result;
+}
+
+float convertToAccel(uint8_t relAcc)
+{
+	return maxAcc * 2.0f * (relAcc - 127.0f) / 256.0f;	
 }

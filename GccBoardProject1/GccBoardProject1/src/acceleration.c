@@ -4,9 +4,6 @@
 
 float accToAngle(float acc);
 
-const float g = 9.81f;
-const float maxAcc = 0.70710678118f * 9.81f;
-
 struct Quaternion accelerationsToAngles(float accelerationX, float accelerationY) {
 	struct Vector acc = (struct Vector){accelerationX, accelerationY, 0};
 	float mag = magnitude(acc);

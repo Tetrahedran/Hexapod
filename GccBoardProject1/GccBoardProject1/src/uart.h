@@ -48,6 +48,8 @@ void sendConvertDecInBin(int decimal);
 void errorMessage(char errorMessageText[]);
 void debugMessage(char debugMessageText[]);
 void systemMessage(char systemMessageText[]);
+uint8_t uartReadyToRead(void);
+uint8_t getValueAtPosition(uint8_t position);
 
 void readReceivedChar();
 uint8_t checkReceivedChar(char tempChar, int tempCounter);

@@ -17,7 +17,7 @@ volatile uint8_t charIsOk;
 volatile uint8_t receivedDataCounter;
 volatile unsigned char tempUartString[8];
 volatile unsigned char dataUartString[6]; //pitch, roll, yaw, long, lateral, vertical
-volatile unsigned char startUartString[6] = {177,177,177,177,177,177};
+volatile unsigned char startUartString[6] = {127,127,127,127,127,127};
 
 void init_uart(void){
 	memcpy(dataUartString, startUartString, sizeof(dataUartString));
@@ -130,6 +130,16 @@ ISR(USART0_RX_vect) {
 			transformUartString();
 		}//end:
 	}//end:
+}
+
+uint8_t uartReadyToRead()
+{
+	return uartStringReadyToRead;
+}
+
+uint8_t getValueAtPosition(uint8_t position)
+{
+	return dataUartString[position];
 }
 
 void readReceivedChar()
