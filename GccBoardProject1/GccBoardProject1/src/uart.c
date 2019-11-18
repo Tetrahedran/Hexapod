@@ -25,11 +25,8 @@ void init_uart(void){
 	UBRR0H = (unsigned char)(UBRR_VAL>>8);
 	UBRR0L = (unsigned char)(UBRR_VAL);
 	
-	receivedDataCounter = 0;
-	charIsOk = 1;
-	
 	/* Enable receiver and transmitter */
-	UCSR0B = (1<<RXEN0);// | (1<<RXCIE0);      // rx enable
+	UCSR0B = (1<<TXEN0) | (1<<RXEN0);// | (1<<RXCIE0);      // tx & rx enable
 	UCSR0B |= (1<<RXCIE0); //interrupt enable
 	UCSR0A |= (1<<RXC0);
 	/* Asynchronous USART, Data bits = 8, Parity = none, Stop bits = 1 */
@@ -37,6 +34,7 @@ void init_uart(void){
 	
 	/*  Override general io pins for usart rx/tx */
 	USART_PORT &= ~_BV(USART_RX);
+	USART_PORT |= _BV(USART_TX);
 }
 
 
@@ -125,7 +123,8 @@ ISR(USART0_RX_vect) {
 		uartReceivedChar = USARTReadChar(); //Check Datasheet: is a new char throwing away if no new one is accepted?
 		
 		readReceivedChar(); 
-		if (receivedDataCounter >= 8){ //String is ready to be transformed
+		if (receivedDataCounter >= 7){ //String is ready to be transformed
+			//PORTC = ~PORTC;
 			uartStringReadyToTransformFlag = 1; //String can now be checked in switch routine
 			blockReceivingUSARTchar_Flag = 1;
 			transformUartString();
@@ -184,6 +183,7 @@ void transformUartString()
 		{
 			dataUartString[i-1] = tempUartString[i];
 		}
+		receivedDataCounter = 0;
 		uartStringReadyToRead = 1;
 		uartStringReadyToTransformFlag = 0;
 		blockReceivingUSARTchar_Flag = 0;
