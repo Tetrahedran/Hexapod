@@ -2,6 +2,8 @@
 # Automatically-generated file. Do not edit or delete the file
 ################################################################################
 
+src\acceleration.c
+
 src\hexapod_constants.c
 
 src\hexpod.c

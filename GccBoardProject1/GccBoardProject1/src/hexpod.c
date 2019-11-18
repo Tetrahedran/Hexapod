@@ -60,7 +60,10 @@ float fK(float hornLength, struct Vector effectiveRodVector, float hornRotation)
 */
 float gK(float hornLength, struct Vector effectiveRodVector, float rodLength)
 {
-	return powf(magnitude(effectiveRodVector), 2) - rodLength * rodLength - hornLength * hornLength;
+	float sqrMag = (magnitude(effectiveRodVector) * magnitude(effectiveRodVector));
+	float sqrRodLength = rodLength * rodLength;
+	float sqrHornLength = hornLength * hornLength;
+	return  sqrMag - (sqrRodLength - sqrHornLength);
 }
 
 /*
@@ -68,7 +71,7 @@ float gK(float hornLength, struct Vector effectiveRodVector, float rodLength)
 */
 float alphaK(float eK, float fK, float gK) 
 {
-	float angle = asinf(gK / sqrtf(eK * eK - fK * fK)) - atan2f(fK, eK);
+	float angle = asin(gK / sqrt(eK * eK + fK * fK)) - atan2(fK, eK);
 	return angle;
 }
 
