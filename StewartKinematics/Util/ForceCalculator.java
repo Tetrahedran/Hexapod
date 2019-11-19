@@ -9,6 +9,11 @@ import static org.pOH.StewartKinematics.Util.HexapodStatics.*;
 
 public class ForceCalculator {
 
+  public static final Vector MaxTorgueX = new Vector(279,0,0);
+  public static final Vector MaxTorgueY = new Vector(0,220.5,61.2);
+  public static final Vector MaxTorgueZ = new Vector(0,61.2, 77.4);
+  public static final Vector AntiGravity = Vector.UP.multiply(250 * 10);
+
   public double maxTransZ = Hexapod.transLimit(Vector.UP, 0.0001);
   public double maxTransX = Hexapod.transLimit(Vector.RIGHT, 0.0001);
   public double maxTransY = Hexapod.transLimit(Vector.FORWARD, 0.0001);
@@ -22,8 +27,8 @@ public class ForceCalculator {
     System.out.println(maxRotX * 57.3);
     System.out.println(maxRotY * 57.3);
     System.out.println(maxRotZ * 57.3);
-    for(int i = 0; i < 19;i++) {
-      pod.calcMotors(Vector.ZERO.multiply(0.01), Quaternion.IDENTITY);
+    for(int i = 0; i < 45;i++) {
+      pod.calcMotors(Vector.ZERO.multiply(0.01), Quaternion.getQuaternionForRotation(Vector.RIGHT, 1 / 57.3));
       for (double d : getTorgueForAllMotors(pod)) {
         System.out.print(d + " ");
       }
@@ -38,8 +43,8 @@ public class ForceCalculator {
   public static List<Double> getTorgueForAllMotors(Hexapod pod) {
     calcForce();
     calcTorgue();
-    Vector totalForce = Vector.DOWN.multiply(20 * 300);
-    Vector totalTorgue = Vector.ZERO;
+    Vector totalForce = Vector.UP.multiply(10 * 250);
+    Vector totalTorgue = new Vector(0,0, 0);
     Hexapod hexapod = pod;
     List<Vector> o = hexapod.calcRealRodVectors(pod.calcMotors());
     double[][] forceMatrix = createForceMatrix(anchorPositions, o, hexapod.getAbsoluteRotation());

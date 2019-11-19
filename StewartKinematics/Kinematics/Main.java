@@ -9,13 +9,13 @@ public class Main {
 
   public static void main(String[] args) {
     Hexapod hex = new Hexapod();
-    for(int i = 0; i < 25 ; i++) {
-      Vector relTrans = Vector.ONE.multiply(0.01);
-      Quaternion rotation = Quaternion.getQuaternionForRotation(Vector.UP, 0 * 2.0 * Math.PI / 360);
+    for(int i = 0; i < 1 ; i++) {
+      Vector relTrans = Vector.ZERO;
+      Quaternion rotation = Quaternion.getQuaternionForRotation(Vector.RIGHT,  Math.PI / 4);
       List<Double> sollWinkel = hex.calcMotors(relTrans, rotation);
       String str = i + " ";
       for(int j = 0; j < sollWinkel.size(); j++) {
-        double angleDegrees = (360 * sollWinkel.get(j) / (2.0 * Math.PI));
+        double angleDegrees = (sollWinkel.get(j) * 57.3);
         str += "Motor " + j + ": " + angleDegrees + " ";
       }
       System.out.println(str);

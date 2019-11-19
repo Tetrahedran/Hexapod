@@ -1,5 +1,6 @@
 package org.pOH.StewartKinematics.Kinematics;
 
+import org.pOH.StewartKinematics.Util.HexapodStatics;
 import org.pOH.StewartKinematics.Util.Quaternion;
 import org.pOH.StewartKinematics.Util.Vector;
 
@@ -19,7 +20,7 @@ public class Hexapod {
     double z_square = Math.pow(rodLength, 2) + Math.pow(hornLength,2) - Math.pow(a1.getX() - m1.getX(), 2) - Math.pow(a1.getY() - m1.getY(), 2);
     double z = Math.sqrt(z_square);
     //TODO
-    absoluteTransform = new Vector(0,0, z - 0.013868);
+    absoluteTransform = new Vector(0,0, 1);
     absoluteRotation = Quaternion.IDENTITY;
   }
 
@@ -66,10 +67,16 @@ public class Hexapod {
   }
 
   private double gk(Vector effectiveRodVectorK, double rodLength, double hornLength) {
+    double sqrMag = Math.pow(effectiveRodVectorK.magnitude(), 2);
+    double sqrRodLeng = Math.pow(rodLength, 2);
+    double sqrHornLeng = Math.pow(hornLength, 2);
     return Math.pow(effectiveRodVectorK.magnitude(), 2) - (Math.pow(rodLength, 2) - Math.pow(hornLength, 2));
   }
 
   protected double alphaK(double eK, double fK, double gK) {
+    double sqrt = Math.sqrt(Math.pow(eK,2) + Math.pow(fK, 2));
+    double asin = Math.asin(gK / Math.sqrt(Math.pow(eK,2) + Math.pow(fK, 2)));
+    double atan2 = Math.atan2(fK,eK);
     double angle = Math.asin(gK / Math.sqrt(Math.pow(eK,2) + Math.pow(fK, 2))) - Math.atan2(fK,eK);
     if(((Double)angle).isNaN() || angle == Double.POSITIVE_INFINITY || angle == Double.NEGATIVE_INFINITY) {
       throw new IllegalArgumentException("Ungültiger Winkel");
@@ -145,6 +152,9 @@ public class Hexapod {
   public static double rotLimit(Vector axis, double angularGranularity) {
     Hexapod pod = new Hexapod();
     for(int i = 0;;i++) {
+      if(i * angularGranularity > (Math.PI)){
+        return Math.PI;
+      }
       try {
         pod.calcMotors(Vector.ZERO, Quaternion.getQuaternionForRotation(axis, angularGranularity));
       } catch (IllegalArgumentException e) {

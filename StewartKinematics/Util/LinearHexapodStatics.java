@@ -1,14 +1,11 @@
 package org.pOH.StewartKinematics.Util;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
-/**
- * Hilfsklasse zur Kalkulation wichtiger Werte im Bezug auf den Hexapoden
- */
-public class HexapodStatics {
+@SuppressWarnings("Duplicates")
+public class LinearHexapodStatics {
   static double sqrt3 = Math.sqrt(3);
 
   /**
@@ -22,14 +19,14 @@ public class HexapodStatics {
   public static final double ap = 1;
 
   /**
-   * Länge des festen Stabs der am Ausleger befestigt ist und zu einem Ancker auf der Platform führt
+   * Länge des Aktuators bei voll eingefahrener Welle
    */
-  public static final double rodLength = 1;
+  public static final double staticAktuatorLength = 0.5;
 
   /**
-   * Länge des Auslegers der an einer Motorwelle befestigt ist
+   * Maximale Länge der Welle des linearen Aktuators
    */
-  public static final double hornLength = 0.25;
+  public static final double welle = 0.5;
 
   /**
    * Ortsvektoren der Eckpunkte des zugrundeliegenden Dreiecks für die Basis
@@ -66,16 +63,10 @@ public class HexapodStatics {
    */
   public static List<Vector> anchorPositions = new LinkedList<>();
 
-  /**
-   * Rotation der Servoausleger um die z-Achse gegen die x-Achse
-   */
-  public static List<Double> hornRotations = new LinkedList<>();
-
   static {
     berechneOrtsvektorenEckenDreiecke(ab,ap);
     berechneOrtsvektorenMotoren(bPosKoeff);
     berechneOrtsvektorenAncker(pPosKoeff);
-    berechneWinkelAuslegerXAchse();
   }
 
   /**
@@ -91,9 +82,9 @@ public class HexapodStatics {
     Ab = new Vector(-ab / 2.0,-innkreisRadiusB);
     Bb = new Vector(ab / 2.0, -innkreisRadiusB);
     Cb = new Vector(0, umkreisRadiusB);
-    HexapodStatics.Ab = Ab;
-    HexapodStatics.Bb = Bb;
-    HexapodStatics.Cb = Cb;
+    LinearHexapodStatics.Ab = Ab;
+    LinearHexapodStatics.Bb = Bb;
+    LinearHexapodStatics.Cb = Cb;
 
     // Ecken des Dreiecks der Platform
     Vector Ap, Bp, Cp;
@@ -102,9 +93,9 @@ public class HexapodStatics {
     Ap = new Vector(0, -umkreisRadiusP);
     Bp = new Vector(ap / 2.0, innkreisRadiusP);
     Cp = new Vector(-ap / 2.0, innkreisRadiusP);
-    HexapodStatics.Ap = Ap;
-    HexapodStatics.Bp = Bp;
-    HexapodStatics.Cp = Cp;
+    LinearHexapodStatics.Ap = Ap;
+    LinearHexapodStatics.Bp = Bp;
+    LinearHexapodStatics.Cp = Cp;
 
   }
 
@@ -149,53 +140,4 @@ public class HexapodStatics {
 
     anchorPositions = Arrays.asList(a1,a2,a3,a4,a5,a6);
   }
-
-  /**
-   * Berechnet den Drehwinkel um die Z-Achse des Auslegers gegen die X-Achse
-   */
-  private static void berechneWinkelAuslegerXAchse() {
-    //Inkorrekte Winkelberechnung
-    /**Vector AB = Bb.subtract(Ab);
-    Vector BC = Cb.subtract(Bb);
-    Vector CA = Ab.subtract(Cb);
-
-    double beta1 = Math.acos(AB.cosine(Vector.RIGHT));
-    double beta2 = Math.acos(AB.cosine(Vector.RIGHT));
-
-    double beta3 = Math.acos(BC.cosine(Vector.RIGHT));
-    double beta4 = Math.acos(BC.multiply(-1).cosine(Vector.RIGHT));
-
-    double beta5 = Math.acos(CA.cosine(Vector.RIGHT));
-    double beta6 = Math.acos(CA.multiply(-1).cosine(Vector.RIGHT));*/
-
-    double beta1 = Math.PI;
-    double beta2 = 0.0;
-
-    double beta3 = 60 / 360.0 * 2 * Math.PI;
-    double beta4 = -120 / 360.0 * 2 * Math.PI;
-
-    double beta5 = -60 / 360.0 * 2 * Math.PI;
-    double beta6 = 120 / 360.0 * 2 * Math.PI;
-
-    hornRotations = Arrays.asList(beta1,beta2,beta3,beta4,beta5,beta6);
-  }
-
-  /**
-   * Berechnet die Richtungsvectoren der Motorachsen in Richtung Ursprung
-   * @return Ein Array mit den Richtungsvectoren der Motorachsen
-   */
-  public static List<Vector> getShaftVectors(){
-    List<Vector> shaftVectors;
-    Vector s1 = Ab.add(Bb.subtract(Ab).multiply(0.5));
-    Vector s2 = s1;
-    Vector s3 = Ab.add(Cb.subtract(Ab).multiply(0.5));
-    Vector s4 = s3;
-    Vector s5 = Bb.add(Cb.subtract(Bb).multiply(0.5));
-    Vector s6 = s5;
-
-    shaftVectors = Arrays.asList(s1,s2,s3,s4,s5,s6);
-
-    return shaftVectors;
-  }
-
 }
