@@ -4,6 +4,6 @@
 #include "quaternion.h"
 #include "hexpod_constants.h"
 
-extern float* calcMotorAngles(struct Vector absTranslation, struct Quaternion absRotation);
+extern void calcMotorAngles(float* angles, struct Vector absTranslation, struct Quaternion absRotation);
 
 #endif

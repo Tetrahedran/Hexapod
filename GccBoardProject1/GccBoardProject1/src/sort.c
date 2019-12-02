@@ -1,11 +1,11 @@
 #include "sort.h"
 
-struct Pwmlength* quicksort(struct Pwmlength pwmlengths[6],int8_t first,int8_t last);
+void quicksort(struct Pwmlength *pwmlengths,int8_t first,int8_t last);
 
-struct Pwmlength* quicksort(struct Pwmlength pwmlengths[6],int8_t first,int8_t last)
+void quicksort(struct Pwmlength *pwmlengths,int8_t first,int8_t last)
 {
-	uint8_t i, j, pivot, temp;
-
+	uint8_t i, j, pivot;
+	struct Pwmlength temp;
 	if(first<last){
 		pivot=first;
 		i=first;
@@ -17,22 +17,21 @@ struct Pwmlength* quicksort(struct Pwmlength pwmlengths[6],int8_t first,int8_t l
 			while(pwmlengths[j].pwmlength>pwmlengths[pivot].pwmlength)
 			j--;
 			if(i<j){
-				temp=pwmlengths[i].pwmlength;
-				pwmlengths[i].pwmlength=pwmlengths[j].pwmlength;
-				pwmlengths[j].pwmlength=temp;
+				temp=pwmlengths[i];
+				pwmlengths[i]=pwmlengths[j];
+				pwmlengths[j]=temp;
 			}
 		}
 
-		temp=pwmlengths[pivot].pwmlength;
-		pwmlengths[pivot].pwmlength=pwmlengths[j].pwmlength;
-		pwmlengths[j].pwmlength=temp;
+		temp=pwmlengths[pivot];
+		pwmlengths[pivot]=pwmlengths[j];
+		pwmlengths[j]=temp;
 		quicksort(pwmlengths,first,j-1);
 		quicksort(pwmlengths,j+1,last);
 	}
-	return pwmlengths;
 }
 
-struct Pwmlength* sort(struct Pwmlength pwmlengths[6])
+void sort(struct Pwmlength *pwmlengths)
 {
-	return quicksort(pwmlengths, 0, 5);
+	quicksort(pwmlengths, 0, 5);
 }
