@@ -59,8 +59,8 @@ int main (void)
 	loadTimerValues((struct Quaternion) {1,0,0,0});
 	
 	while (1) {
-		float xAcc = convertToAccel(0);
-		float yAcc = convertToAccel(127);
+		float xAcc = convertToAccel(getValueAtPosition(3));
+		float yAcc = convertToAccel(getValueAtPosition(4));
 		loadTimerValues(accelerationsToAngles(xAcc, yAcc));				
 	}
 	return 0;
