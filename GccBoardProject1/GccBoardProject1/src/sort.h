@@ -7,6 +7,6 @@ struct Pwmlength {
 	uint8_t pin;
 };
 
-extern struct Pwmlength* sort(struct Pwmlength pwmlengths[6]);
+extern void sort(struct Pwmlength *pwmlengths);
 
 #endif

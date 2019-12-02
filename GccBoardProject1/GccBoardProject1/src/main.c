@@ -19,7 +19,7 @@ struct PinTimer {
 };
 
 struct LimitRest calculatePwm(uint8_t pwmLength, bool firstPWM);
-struct PinTimer* loadTimerValues(struct Quaternion absRot);
+void loadTimerValues(struct Quaternion absRot);
 struct LimitRest calculateFirstPwm(uint8_t pwmlength);
 float convertToAccel(uint8_t relAcc);
 
@@ -56,23 +56,12 @@ int main (void)
 
 	initialize(0.55f, 0.24f, 0.215f, 0.055f, 0.45f, 0.45f);
 	
-	struct PinTimer *pTimerVals = loadTimerValues((struct Quaternion) {1,0,0,0});
-	for(uint8_t x = 0; x < 6; x++) {
-		pinTimers[x] = *(pTimerVals + x);
-	}
+	loadTimerValues((struct Quaternion) {1,0,0,0});
 	
 	while (1) {
-		if (1 /*uartReadyToRead() == 1*/)
-		{
-			//float xAcc = convertToAccel(getValueAtPosition(3));
-			//float yAcc = convertToAccel(getValueAtPosition(4)); 
-			float xAcc = maxAcc;
-			float yAcc = 0.0f;
-			struct PinTimer *pTimerVals = loadTimerValues(accelerationsToAngles(xAcc, yAcc));
-			for(uint8_t x = 0; x < 6; x++) {
-				pinTimers[x] = *(pTimerVals + x);
-			}
-		}					
+		float xAcc = convertToAccel(getValueAtPosition(3));
+		float yAcc = convertToAccel(getValueAtPosition(4));
+		loadTimerValues(accelerationsToAngles(xAcc, yAcc));				
 	}
 	return 0;
 }
@@ -144,13 +133,13 @@ struct LimitRest calculatePwm(uint8_t pwmlength, bool firstPWM) {
 /*
 * Lädt und sortiert die Werte, die das Abschalten der Servomotor Pins bestimmen.
 */
-struct PinTimer* loadTimerValues(struct Quaternion absRot) {
-	static struct PinTimer result[6];
+void loadTimerValues(struct Quaternion absRot) {
 	static struct Pwmlength pwmlengths[6];
-	float* angles = calcMotorAngles(trans, absRot);
+	float angles[6];
+	calcMotorAngles(angles, trans, absRot);
 	for (uint8_t i = 0; i < 6; i++)
 	{
-		float angle = *(angles + i);
+		float angle = angles[i];
 		uint8_t pwm = (angle + M_PI) / (2.0f * M_PI) * 255;
 		pwmlengths[i] = (struct Pwmlength) {pwm, i};
 	}
@@ -162,28 +151,26 @@ struct PinTimer* loadTimerValues(struct Quaternion absRot) {
 		pwmlengths[i].pwmlength = 255 - pwmlengths[i].pwmlength;
 	}
 	
-	struct Pwmlength *pPwm = sort(pwmlengths);
-	
-	for(uint8_t x = 0; x < 6; x++) {
-		pwmlengths[x] = *(pPwm + x);
-	}
-	
+	sort(pwmlengths);
+
 	for (uint8_t i = 0; i < 6; i++) {
 		uint8_t partialPwm = pwmlengths[i].pwmlength;
 		if (i > 0) {
 			partialPwm = partialPwm - pwmlengths[i - 1].pwmlength;
-			result[i].limitRest = calculatePwm(partialPwm, false);
+			pinTimers[i].limitRest = calculatePwm(partialPwm, false);
 		}else {
-			result[i].limitRest = calculatePwm(partialPwm, true);
+			pinTimers[i].limitRest = calculatePwm(partialPwm, true);
 		}
 		
-		result[i].pin = pwmlengths[i].pin;
+		pinTimers[i].pin = pwmlengths[i].pin;
 	}
-	
-	return result;
+
 }
 
 float convertToAccel(uint8_t relAcc)
 {
-	return maxAcc * 2.0f * (relAcc - 127.0f) / 256.0f;	
+	float quotient = (relAcc - 127.0f) / 256.0f;
+	float baum = 2.0f * quotient;
+	float nulle = baum * maxAcc;
+	return nulle;	
 }
