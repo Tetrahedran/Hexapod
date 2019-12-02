@@ -12,6 +12,8 @@ src\quaternion.c
 
 src\sort.c
 
+src\uart.c
+
 src\vector.c
 
 src\ASF\common\boards\user_board\init.c

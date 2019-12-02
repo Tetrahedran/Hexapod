@@ -4,8 +4,7 @@ struct Pwmlength* quicksort(struct Pwmlength pwmlengths[6],int8_t first,int8_t l
 
 struct Pwmlength* quicksort(struct Pwmlength pwmlengths[6],int8_t first,int8_t last)
 {
-	uint8_t i, j, pivot;
-	struct Pwmlength temp;
+	uint8_t i, j, pivot, temp;
 
 	if(first<last){
 		pivot=first;
@@ -18,15 +17,15 @@ struct Pwmlength* quicksort(struct Pwmlength pwmlengths[6],int8_t first,int8_t l
 			while(pwmlengths[j].pwmlength>pwmlengths[pivot].pwmlength)
 			j--;
 			if(i<j){
-				temp=pwmlengths[i];
-				pwmlengths[i]=pwmlengths[j];
-				pwmlengths[j]=temp;
+				temp=pwmlengths[i].pwmlength;
+				pwmlengths[i].pwmlength=pwmlengths[j].pwmlength;
+				pwmlengths[j].pwmlength=temp;
 			}
 		}
 
-		temp=pwmlengths[pivot];
-		pwmlengths[pivot]=pwmlengths[j];
-		pwmlengths[j]=temp;
+		temp=pwmlengths[pivot].pwmlength;
+		pwmlengths[pivot].pwmlength=pwmlengths[j].pwmlength;
+		pwmlengths[j].pwmlength=temp;
 		quicksort(pwmlengths,first,j-1);
 		quicksort(pwmlengths,j+1,last);
 	}

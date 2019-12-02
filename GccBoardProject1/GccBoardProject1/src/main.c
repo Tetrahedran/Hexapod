@@ -5,6 +5,8 @@
 #include "hexpod_constants.h"
 #include "sort.h"
 #include "acceleration.h"
+#include "uart.h"
+#include <util/delay.h>
 
 struct LimitRest {
 	uint16_t limit;
@@ -23,15 +25,19 @@ struct LimitRest calculateFirstPwm(uint8_t pwmlength);
 volatile uint16_t turnOffCounter = 0;
 volatile uint16_t turnOnCounter = 0;
 volatile uint8_t pinCounter = 0; //Zählt, welcher Wert in pinTimers als nächstes gelesen wird
-volatile struct Vector trans = (struct Vector) {0.0f, 0.0f, 0.0896f};
+volatile struct Vector trans = (struct Vector) {0.0f, 0.0f, 0.163f};
 
 volatile struct PinTimer pinTimers[6];
 
 int main (void)
 {
-	//PWM Source
-	DDRA = 0xff;
-	PORTA = 0xff;
+	_delay_ms(100);
+	
+	init_uart();
+	
+	//Power Source
+	DDRB = 0xff;
+	PORTB = 0xff;
 	
 	//Initialisierung 50ms timer
 	TCCR2A = (1<<WGM01);
@@ -46,7 +52,7 @@ int main (void)
 	OCR0A = 255;
 	sei();
 	
-	initialize(0.25f, 0.23f, 0.1f, 0.015f, 0.425f, 0.39f);
+	initialize(0.55f, 0.24f, 0.215f, 0.055f, 0.45f, 0.45f);
 	
 	struct PinTimer *pTimerVals = loadTimerValues();
 	for(uint8_t x = 0; x < 6; x++) {

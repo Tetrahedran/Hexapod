@@ -265,6 +265,12 @@
     <Compile Include="src\structs.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="src\uart.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\uart.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="src\vector.c">
       <SubType>compile</SubType>
     </Compile>
