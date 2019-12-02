@@ -25,8 +25,9 @@ float convertToAccel(uint8_t relAcc);
 
 volatile uint16_t turnOffCounter = 0;
 volatile uint16_t turnOnCounter = 0;
-volatile uint8_t pinCounter = 0; //Z‰hlt, welcher Wert in pinTimers als n‰chstes gelesen wird
-volatile struct Vector trans = (struct Vector) {0.0f, 0.0f, 1.0f};
+volatile uint8_t pinCounter = 0; //Z√§hlt, welcher Wert in pinTimers als n√§chstes gelesen wird
+
+volatile struct Vector trans = (struct Vector) {0.0f, 0.0f, 0.163f};
 
 volatile struct PinTimer pinTimers[6];
 
@@ -52,8 +53,8 @@ int main (void)
 	TIMSK0 |= (1<<OCIE0A);
 	OCR0A = 255;
 	sei();
-	
-	initialize(1.0f, 1.0f, 1.0f, 1.0f, 0.5f, 0.5f);
+
+	initialize(0.55f, 0.24f, 0.215f, 0.055f, 0.45f, 0.45f);
 	
 	struct PinTimer *pTimerVals = loadTimerValues((struct Quaternion) {1,0,0,0});
 	for(uint8_t x = 0; x < 6; x++) {
@@ -141,7 +142,7 @@ struct LimitRest calculatePwm(uint8_t pwmlength, bool firstPWM) {
 }
 
 /*
-* L‰dt und sortiert die Werte, die das Abschalten der Servomotor Pins bestimmen.
+* L√§dt und sortiert die Werte, die das Abschalten der Servomotor Pins bestimmen.
 */
 struct PinTimer* loadTimerValues(struct Quaternion absRot) {
 	static struct PinTimer result[6];
