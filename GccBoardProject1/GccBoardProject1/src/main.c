@@ -35,17 +35,22 @@ int main (void)
 {
 	_delay_ms(100);
 	
+	cli();
+	
 	init_uart();
 	
-	//Power Source
-	DDRB = 0xff;
-	PORTB = 0xff;
+	//nicht benötigt
+	////Power Source
+	//DDRB = 0xff;
+	//PORTB = 0xff;
+	
+	DDRA = 0xff;
 	
 	//Initialisierung 50ms timer
 	TCCR2A = (1<<WGM01);
-	TCCR2B = (1<<CS20);
+	TCCR2B = (1<<CS22);
 	TIMSK2 |= (1<<OCIE2A);
-	OCR2A = 255;
+	OCR2A = 249;
 	
 	//Initialisierung variabler PWM-Timer
 	TCCR0A = (1<<WGM01);
@@ -59,9 +64,12 @@ int main (void)
 	loadTimerValues((struct Quaternion) {1,0,0,0});
 	
 	while (1) {
-		float xAcc = convertToAccel(getValueAtPosition(3));
-		float yAcc = convertToAccel(getValueAtPosition(4));
-		loadTimerValues(accelerationsToAngles(xAcc, yAcc));				
+		if(uartReadyToRead() == 1)
+		{
+			float xAcc = convertToAccel(getValueAtPosition(3));
+			float yAcc = convertToAccel(getValueAtPosition(4));
+			loadTimerValues(accelerationsToAngles(xAcc, yAcc));
+		}		
 	}
 	return 0;
 }
@@ -69,8 +77,8 @@ int main (void)
 ISR( TIMER2_COMPA_vect )
 {
 	turnOnCounter++;
-	OCR2A = 255;
-	if (turnOnCounter >= 3125)
+	OCR2A = 249;
+	if (turnOnCounter >= 50)
 	{
 		TCCR0B |= (1<<CS00);
 		turnOnCounter = 0;
