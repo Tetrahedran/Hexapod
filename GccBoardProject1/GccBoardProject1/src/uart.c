@@ -1,208 +1,277 @@
 /*** uart.c ***/
 
 #include "uart.h"
-//#include "protocol.h"
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include <stddef.h>
+#include <avr/pgmspace.h>
+#include "uart.h"
 #include <string.h>
-#include <stdio.h>
-
-volatile uint8_t blockReceivingUSARTchar_Flag = 0;
-volatile uint8_t uartStringReadyToTransformFlag;
-volatile uint8_t uartStringReadyToRead = 1;
-volatile unsigned char uartReceivedChar; 
-volatile uint8_t charIsOk;
-volatile uint8_t receivedDataCounter;
-volatile unsigned char tempUartString[8];
-volatile unsigned char dataUartString[6]; //pitch, roll, yaw, long, lateral, vertical
-volatile unsigned char startUartString[6] = {127,127,127,127,127,127};
-
-void init_uart(void){
-	memcpy(dataUartString, startUartString, sizeof(dataUartString));
-	//Set Baudrate
-	UBRR0H = (unsigned char)(UBRR_VAL>>8);
-	UBRR0L = (unsigned char)(UBRR_VAL);
-	
-	/* Enable receiver and transmitter */
-	UCSR0B = (1<<TXEN0) | (1<<RXEN0);// | (1<<RXCIE0);      // tx & rx enable
-	UCSR0B |= (1<<RXCIE0); //interrupt enable
-	UCSR0A |= (1<<RXC0);
-	/* Asynchronous USART, Data bits = 8, Parity = none, Stop bits = 1 */
-	UCSR0C = (1<<UCSZ01) | (1<<UCSZ00);    // Asynchron 8N1
-	
-	/*  Override general io pins for usart rx/tx */
-	USART_PORT &= ~_BV(USART_RX);
-	USART_PORT |= _BV(USART_TX);
-}
+#include <math.h>
 
 
-void uart_putc(unsigned char c)
-{
-	//unsigned char tmphead;	
-	
-	// wait for UART to get ready
-	while (!(UCSR0A & (1<<UDRE0))){
-		/* wait until sending is possible */
-	}
-	// save into buffer -> send
-	UDR0 = c;
-}
-
-// Wait until a byte has been received and return received data
-// char USART0_Receive(void)
-// {
-// 	// wait for data from USART to be received
-// 	while (!(UCSR0A & (1 << RXC0))) {
-// 		
-// 	}
-// 	
-// 	// get and return buffer data
-// 	char rChar = UDR0;
-// 	
-// 	return rChar;
-// }
-
-//This function is used to read the available data
-//from USART. This function will wait until data is
-//available.
-char USARTReadChar(){
-	//Wait until a data is available
-
-	while(!(UCSR0A & (1<<RXC0))){
-		//Do nothing
-	}
-
-	//Now USART has got data from host
-	//and is available is buffer
-	return UDR0;
-}
-
-
-char readCharIfAvailible(){
-	//Wait until a data is available
-
-	if(!(UCSR0A & (1<<RXC0))){	
-		return UDR0;
-	}else{
-		return (int) NULL;
-	}
-
-	//Now USART has got data from host
-	//and is available is buffer	
-}
-
-// uint8_t USART_ReceiveByte(){
-//	while((UCSRA &(1<<RXC)) == 0);
-//	return UDR;
-//}
-
-void USART0_SetupInterrupts(void)
-{
-	// USART
-	UCSR0B |= (1 << RXCIE0) | (1 << TXEN0) | (1 << RXEN0);
-	
-	// Puffer leeren
-	do {
-		UDR0;
-	} while(UCSR0A & (1 << RXC0));
-	// **********************
-}
-
-/**
- * Interrupt routine for Usart0
- * Interrupt routine for Usart0 - If something comes over Bluetooth then this event is triggered
- * @param Interrupt event
- * @return none
+/*
+ *  constants and macros
  */
-ISR(USART0_RX_vect) {
-		
-	if (blockReceivingUSARTchar_Flag == 0) {
-		//Main-workload: read char from register
-		uartReceivedChar = USARTReadChar(); //Check Datasheet: is a new char throwing away if no new one is accepted?
-		
-		readReceivedChar(); 
-		if (receivedDataCounter >= 7){ //String is ready to be transformed
-			//PORTC = ~PORTC;
-			uartStringReadyToTransformFlag = 1; //String can now be checked in switch routine
-			blockReceivingUSARTchar_Flag = 1;
-			transformUartString();
-		}//end:
-	}//end:
+
+/* size of RX/TX buffers */
+#define UART_RX_BUFFER_MASK ( UART_RX_BUFFER_SIZE - 1)
+#define UART_TX_BUFFER_MASK ( UART_TX_BUFFER_SIZE - 1)
+
+#if ( UART_RX_BUFFER_SIZE & UART_RX_BUFFER_MASK )
+#error RX buffer size is not a power of 2
+#endif
+#if ( UART_TX_BUFFER_SIZE & UART_TX_BUFFER_MASK )
+#error TX buffer size is not a power of 2
+#endif
+
+ /* ATmega with one USART */
+ #define UART0_RECEIVE_INTERRUPT   USART0_RX_vect
+ #define UART0_TRANSMIT_INTERRUPT  USART0_UDRE_vect
+ #define UART0_STATUS      UCSR0A
+ #define UART0_CONTROL     UCSR0B
+ #define UART0_CONTROLC    UCSR0C
+ #define UART0_DATA        UDR0
+ #define UART0_UDRIE       UDRIE0
+ #define UART0_UBRRL       UBRR0L
+ #define UART0_UBRRH       UBRR0H
+ #define UART0_BIT_U2X     U2X0
+ #define UART0_BIT_RXCIE   RXCIE0
+ #define UART0_BIT_RXEN    RXEN0
+ #define UART0_BIT_TXEN    TXEN0
+ #define UART0_BIT_UCSZ0   UCSZ00
+ #define UART0_BIT_UCSZ1   UCSZ01
+
+/*
+ *  module global variables
+ */
+static volatile unsigned char UART_TxBuf[UART_TX_BUFFER_SIZE];
+static volatile unsigned char UART_RxBuf[UART_RX_BUFFER_SIZE];
+static volatile unsigned char UART_TxHead;
+static volatile unsigned char UART_TxTail;
+static volatile unsigned char UART_RxHead;
+static volatile unsigned char UART_RxTail;
+static volatile unsigned char UART_LastRxError;
+
+
+ISR (UART0_RECEIVE_INTERRUPT)	
+/*************************************************************************
+Function: UART Receive Complete interrupt
+Purpose:  called when the UART has received a character
+**************************************************************************/
+{
+    unsigned char tmphead;
+    unsigned char data;
+    unsigned char usr;
+    unsigned char lastRxError;
+ 
+ 
+    /* read UART status register and UART data register */
+    usr  = UART0_STATUS;	//UCSR0A
+    data = UART0_DATA;		//UDR0
+    
+    /* get FEn (Frame Error) DORn (Data OverRun) UPEn (USART Parity Error) bits */
+#if defined(FE) && defined(DOR) && defined(UPE)
+    lastRxError = usr & (_BV(FE)|_BV(DOR)|_BV(UPE) );
+#elif defined(FE0) && defined(DOR0) && defined(UPE0) //this is the register for ATMEGA644PA - UART0
+    lastRxError = usr & (_BV(FE0)|_BV(DOR0)|_BV(UPE0) );
+#elif defined(FE1) && defined(DOR1) && defined(UPE1)
+    lastRxError = usr & (_BV(FE1)|_BV(DOR1)|_BV(UPE1) );
+#elif defined(FE) && defined(DOR)
+    lastRxError = usr & (_BV(FE)|_BV(DOR) );
+#endif
+
+    /* calculate buffer index */ 
+    tmphead = ( UART_RxHead + 1) & UART_RX_BUFFER_MASK; //UART_RX_BUFFER_SIZE - 1 => 31
+    
+    if ( tmphead == UART_RxTail ) {
+        /* error: receive buffer overflow */
+        lastRxError = UART_BUFFER_OVERFLOW >> 8;
+    }else{
+        /* store new index */
+        UART_RxHead = tmphead;
+        /* store received data in buffer */
+        UART_RxBuf[tmphead] = data;
+    }
+    UART_LastRxError |= lastRxError;   
+	//in main.c/generalCatchEvents() ?C polls for characters
 }
 
-uint8_t uartReadyToRead()
+
+ISR (UART0_TRANSMIT_INTERRUPT)
+/*************************************************************************
+Function: UART Data Register Empty interrupt
+Purpose:  called when the UART is ready to transmit the next byte
+**************************************************************************/
 {
-	return uartStringReadyToRead;
+    unsigned char tmptail;
+
+    
+    if ( UART_TxHead != UART_TxTail) {
+        /* calculate and store new buffer index */
+        tmptail = (UART_TxTail + 1) & UART_TX_BUFFER_MASK;
+        UART_TxTail = tmptail;
+        /* get one byte from buffer and write it to UART */
+        UART0_DATA = UART_TxBuf[tmptail];  /* start transmission */
+    }else{
+        /* tx buffer empty, disable UDRE interrupt */
+        UART0_CONTROL &= ~_BV(UART0_UDRIE);
+    }
 }
 
-uint8_t getValueAtPosition(uint8_t position)
+
+/*************************************************************************
+Function: uart_init()
+Purpose:  initialize UART and set baudrate
+Input:    baudrate using macro UART_BAUD_SELECT()
+Returns:  none
+**************************************************************************/
+void uart_init(unsigned int baudrate)
 {
-	return dataUartString[position];
+    UART_TxHead = 0;
+    UART_TxTail = 0;
+    UART_RxHead = 0;
+    UART_RxTail = 0;
+
+#ifdef UART_TEST
+#ifndef UART0_BIT_U2X
+#warning "UART0_BIT_U2X not defined"
+#endif
+#ifndef UART0_UBRRH
+#warning "UART0_UBRRH not defined"
+#endif
+#ifndef UART0_CONTROLC
+#warning "UART0_CONTROLC not defined"
+#endif
+#if defined(URSEL) || defined(URSEL0)
+#ifndef UART0_BIT_URSEL
+#warning "UART0_BIT_URSEL not defined"
+#endif
+#endif
+#endif
+
+    /* Set baud rate */
+    if ( baudrate & 0x8000 )
+    {
+        #if UART0_BIT_U2X
+        UART0_STATUS = (1<<UART0_BIT_U2X);  //Enable 2x speed 
+        #endif
+    } 
+    #if defined(UART0_UBRRH)
+    UART0_UBRRH = (unsigned char)((baudrate>>8)&0x80) ;
+    #endif    
+    UART0_UBRRL = (unsigned char) (baudrate&0x00FF);
+      
+    /* Enable USART receiver and transmitter and receive complete interrupt */
+    UART0_CONTROL = _BV(UART0_BIT_RXCIE)|(1<<UART0_BIT_RXEN)|(1<<UART0_BIT_TXEN);
+    
+    /* Set frame format: asynchronous, 8data, no parity, 1stop bit */
+    #ifdef UART0_CONTROLC
+    #ifdef UART0_BIT_URSEL
+    UART0_CONTROLC = (1<<UART0_BIT_URSEL)|(1<<UART0_BIT_UCSZ1)|(1<<UART0_BIT_UCSZ0);
+    #else
+    UART0_CONTROLC = (1<<UART0_BIT_UCSZ1)|(1<<UART0_BIT_UCSZ0);
+    #endif 
+    #endif
+
+}/* uart_init */
+
+
+/*************************************************************************
+Function: uart_getc()
+Purpose:  return byte from ringbuffer  
+Returns:  lower byte:  received byte from ringbuffer
+          higher byte: last receive error
+**************************************************************************/
+unsigned int uart_getc(void)
+{    
+    unsigned char tmptail;
+    unsigned char data;
+    unsigned char lastRxError;
+
+
+    if ( UART_RxHead == UART_RxTail ) {
+        return UART_NO_DATA;   /* no data available */
+    }
+    
+    /* calculate buffer index */
+    tmptail = (UART_RxTail + 1) & UART_RX_BUFFER_MASK;
+    
+    /* get data from receive buffer */
+    data = UART_RxBuf[tmptail];
+    lastRxError = UART_LastRxError;
+    
+    /* store buffer index */
+    UART_RxTail = tmptail; 
+    
+    UART_LastRxError = 0;
+    return (lastRxError << 8) + data;
+
+}/* uart_getc */
+
+
+/*************************************************************************
+Function: uart_putc()
+Purpose:  write byte to ringbuffer for transmitting via UART
+Input:    byte to be transmitted
+Returns:  none          
+**************************************************************************/
+void uart_putc(unsigned char data)
+{
+    unsigned char tmphead;
+
+    
+    tmphead  = (UART_TxHead + 1) & UART_TX_BUFFER_MASK;
+    
+    while ( tmphead == UART_TxTail ){
+        ;/* wait for free space in buffer */
+    }
+    
+    UART_TxBuf[tmphead] = data;
+    UART_TxHead = tmphead;
+
+    /* enable UDRE interrupt */
+    UART0_CONTROL    |= _BV(UART0_UDRIE);
+
+}/* uart_putc */
+
+
+/*************************************************************************
+Function: uart_puts()
+Purpose:  transmit string to UART
+Input:    string to be transmitted
+Returns:  none          
+**************************************************************************/
+void uart_puts(const char *s )
+{
+    while (*s) 
+      uart_putc(*s++);
+
+}/* uart_puts */
+
+
+//This function prints a string
+void sendString(char tempStringChar[]){
+	uart_puts(tempStringChar);
 }
 
-void readReceivedChar()
+/*************************************************************************
+Function: uart_puts_p()
+Purpose:  transmit string from program memory to UART
+Input:    program memory string to be transmitted
+Returns:  none
+**************************************************************************/
+void uart_puts_p(const char *progmem_s )
 {
-	charIsOk = checkReceivedChar(uartReceivedChar, receivedDataCounter);
-	
-	if (charIsOk == 1)
-	{
-		tempUartString[receivedDataCounter] = uartReceivedChar;
-		receivedDataCounter++;
-	}
-	else 
-	{
-		receivedDataCounter = 0;
-	}
-}
+    register char c;
+    
+    while ( (c = pgm_read_byte(progmem_s++)) ) 
+      uart_putc(c);
 
-uint8_t checkReceivedChar(char tempChar, int tempCounter)
-{
-	if (tempCounter == 0)
-	{
-		if (tempChar=='S')
-		{
-			return 1;
-		}
-		else 
-		{ 
-			return 0;
-		}
-	} else if ((tempCounter>0)&&(tempCounter<7))
-	{
-		return 1;
-	} else if (tempCounter==7)
-	{
-		if (tempChar=='E')
-		{
-			return 1;
-		} else 
-		{
-			return 0;
-		}
-	} else {return 0;}	
-}
-
-void transformUartString()
-{
-	if (uartStringReadyToTransformFlag == 1)
-	{	
-		uartStringReadyToRead = 0;
-		for (int i=1; i<7; i++)
-		{
-			dataUartString[i-1] = tempUartString[i];
-		}
-		receivedDataCounter = 0;
-		uartStringReadyToRead = 1;
-		uartStringReadyToTransformFlag = 0;
-		blockReceivingUSARTchar_Flag = 0;
-	}
-}
+}/* uart_puts_p */
 
 /* reverse:  reverse string s in place */
-void reverse(char s[])
-{
+void reverse(char s[]){
 	int i, j;
 	char c;
 	
@@ -214,8 +283,8 @@ void reverse(char s[])
 }
 
 /* itoa:  convert n to characters in s */
-void intToString(int n, char s[])
-{
+void intToString(int n, char s[]) {
+	
 	int i, sign;
 	
 	if ((sign = n) < 0)  /* record sign */
@@ -223,165 +292,173 @@ void intToString(int n, char s[])
 	i = 0;
 	do {       /* generate digits in reverse order */
 		s[i++] = n % 10 + '0';   /* get next digit */
-		} while ((n /= 10) > 0);     /* delete it */
+	} while ((n /= 10) > 0);     /* delete it */
 		if (sign < 0)
 		s[i++] = '-';
 		s[i] = '\0';
 		reverse(s);
-	}
-	
-	/* itoa:  convert n to characters in s */
-	void longToString(unsigned int long n, char s[])
-	{
+}
+
+
+/* itoa:  convert n to characters in s */
+void longToString(unsigned int long n, char s[]){
 	unsigned long int i, sign;
 	
-	if ((sign = n) < 0)  /* record sign */
-	n = -n;          /* make n positive */
+	if ((sign = n) < 0){	// record sign
+		n = -n;				// make n positive
+	}
 	i = 0;
-	do {       /* generate digits in reverse order */
-		s[i++] = n % 10 + '0';   /* get next digit */
-		} while ((n /= 10) > 0);     /* delete it */
-		if (sign < 0)
+	do {// generate digits in reverse order
+		s[i++] = n % 10 + '0';	//get next digit
+	} while ((n /= 10) > 0);	//delete it
+	
+	if (sign < 0){
 		s[i++] = '-';
-		s[i] = '\0';
-		reverse(s);
 	}
-	
-	
-void sendIntUart(int n){
-	
-	uint8_t maxAmountNumbers=10;
-	
-	char valueChar[10];
-	intToString(n, valueChar); // defined in Header file
-	
-	for(int i=0;i<maxAmountNumbers;i++){
-		if (valueChar[i] ==',' || valueChar[i] =='.' ||valueChar[i] =='1' || valueChar[i] =='2'||valueChar[i] =='3'||valueChar[i] =='4'||valueChar[i] =='5'||valueChar[i] =='6'||valueChar[i] =='7'||valueChar[i] =='8'||valueChar[i] =='9'||valueChar[i] =='0'||valueChar[i] =='-'){
-		uart_putc(valueChar[i]);
-		}
-		else {
-			i=maxAmountNumbers;
-		}//end else
-	}//for (int i=...
+	s[i] = '\0';
+	reverse(s);
 }
 
-void sendLongUart(unsigned long int n){
+// Converts a floating point number to string.
+void ftoa(float n, char *res, int afterpoint){
+	// Extract integer part
+	int ipart = (int)n;
 	
-	uint8_t maxAmountNumbers=12;
+	// Extract floating part
+	float fpart = n - (float)ipart;
 	
-	char valueChar[12];
-	longToString(n, valueChar); // defined in Header file
+	// convert integer part to string
+	int i = intToStr(ipart, res, 0);
 	
-	for(int i=0;i<maxAmountNumbers;i++){
-		if (valueChar[i] ==',' || valueChar[i] =='.' || valueChar[i] =='1' || valueChar[i] =='2'||valueChar[i] =='3'||valueChar[i] =='4'||valueChar[i] =='5'||valueChar[i] =='6'||valueChar[i] =='7'||valueChar[i] =='8'||valueChar[i] =='9'||valueChar[i] =='0'||valueChar[i] =='-'){
-			uart_putc(valueChar[i]);
-		}
-		else {
-			i=maxAmountNumbers;
-		}//end else
-	}//for (int i=...
-}
-
-
-
-
-//This function prints a string
-void sendString(char tempStringChar[]){
-	
-	//uint8_t maxAmountLetters=255;//strlen(stringChar);//255;
-	
-//	for(int i=0;i<maxAmountLetters;i++){
+	// check for display option after point
+	if (afterpoint != 0)
+	{
+		res[i] = '.';  // add dot
 		
-	for(int i=0;i<my_strlen(tempStringChar);i++){
-		//if (tempStringChar[i]!=NULL){//test if string is finished
-			uart_putc(tempStringChar[i]);
-		//}
-		//else {i=maxAmountLetters;}
+		// Get the value of fraction part up to given no.
+		// of points after dot. The third parameter is needed
+		// to handle cases like 233.007
+		fpart = fpart * pow(10, afterpoint);
+		
+		intToStr((int)fpart, res + i + 1, afterpoint);
 	}
-	//free(tempStringChar);
 }
+
+// Converts a given integer x to string str[].  d is the number
+// of digits required in output. If d is more than the number
+// of digits in x, then 0s are added at the beginning.
+int intToStr(int x, char str[], int d){
 	
-int my_strlen(char *str)
-{
-	int i;
-	for (i=0; str[i];i++);
+	int i = 0;
+	while (x)
+	{
+		str[i++] = (x%10) + '0';
+		x = x/10;
+	}
+	
+	// If number of digits required is more, then
+	// add 0s at the beginning
+	while (i < d)
+	str[i++] = '0';
+	
+	reverseOverLen(str, i);
+	str[i] = '\0';
 	return i;
-		
 }
 
+// reverses a string 'str' of length 'len'
+void reverseOverLen(char *str, int len){
+	int i=0, j=len-1, temp;
+	while (i<j)
+	{
+		temp = str[i];
+		str[i] = str[j];
+		str[j] = temp;
+		i++; j--;
+	}
+}
 
-void sendConvertDecInHex(int decimal){
-	long int quotient;
-	int i=1, j, temp;
-	char hexadecimalNumber[10];
-	
-	quotient = decimal; //set the input as quotient
-	
-	while(quotient != 0){
-		temp = quotient % 16;
+uint8_t dynamicBufferSize(void) 
+{
+	unsigned char tempHead = 0;
+	tempHead = (UART_RxHead - UART_RxTail) & UART_RX_BUFFER_MASK;
+	if (tempHead > 0)
+	{
+		PORTC = tempHead;
+	}
+	return tempHead;
+}
 
-		//To convert integer into character
-		if( temp < 10){
-			temp = temp + 48; //in the ASCII-range the numbers starts at 48 until 57
-		}else{
-			temp = temp + 55; //the character A starts in the ASCII-range at 65 (55 + 10 => A)
+uint8_t uartConsistencyCheck(void)
+{
+	if (dynamicBufferSize()<8)
+	{
+		return 0;
+	}
+	else if (UART_RxBuf[UART_RxTail]== 'S')
+	{
+		for (int i = 1; i < 8; i++)
+		{
+			if (UART_RxTail + i & UART_RX_BUFFER_MASK == UART_RxHead)
+			{
+				return 0;
+			} else
+			{
+				char c = UART_RxBuf[(UART_RxTail + i) & UART_RX_BUFFER_MASK];
+				if (c == 'E' && i == 7)
+				{
+					return 1;
+				}
+			}
 		}
-		hexadecimalNumber[i++]= temp; //put the result in the char array
-		quotient = quotient / 16;
-	}
-	for(j = i-1; j > 0; j--){
-		uart_putc(hexadecimalNumber[j]);
-	}
-	//in case of '0' in the given decimal variable
-	if (decimal == 0){
-		uart_putc(32); //empty space	
-		uart_putc(48); //ASCII for 0
+		UART_RxTail = (UART_RxTail + 1) & UART_RX_BUFFER_MASK;
+		return uartConsistencyCheck();
+	} else
+	{
+		for (int i = 1; (UART_RxTail + i) & UART_RX_BUFFER_MASK != UART_RxHead; i++)
+		{
+			char c = UART_RxBuf[(UART_RxTail + i) & UART_RX_BUFFER_MASK];
+			if (c == 'S')
+			{
+				UART_RxTail = (UART_RxTail + i) & UART_RX_BUFFER_MASK;
+				return uartConsistencyCheck();
+			}
+		}
+		UART_RxTail = UART_RxHead;
+		return 0;
+	}		
+	return 0;
+}
+
+void uartGetData(uint8_t data[])
+{
+	for (int i = 0; i < 8; i++)
+	{
+		if (i == 0 || i == 7)
+		{
+			uart_getc();
+		} else
+		{			
+			data[i - 1] = uart_getc();
+		}
 	}
 }
 
-void sendHex(uint8_t hexvalue){
-	char hex; 
-	sprintf(hex, "Hex: %x\n",hexvalue);
-	sendString(hex);
-}
-
-void sendConvertDecInBin(int decimal){
-	long int quotient;
-	int binaryNumber[10],i=1,j;
-
-	quotient = decimal;
-
-	while(quotient!=0){
-		binaryNumber[i++]= (quotient % 2) + 48;
-		quotient = quotient / 2;
-	}
-	for(j = i -1 ;j> 0;j--){
-		uart_putc(binaryNumber[j]);
-	}
-	//in case of '0' in the given decimal variable
-	if (decimal == 0){
-		uart_putc(48); //ASCII for 0
+void clearReceiveBufferIfNecessary(void) 
+{
+	if (dynamicBufferSize() > UART_RX_BUFFER_SIZE / 2)
+	{
+		UART_RxTail = UART_RxHead;
 	}
 }
 
-void errorMessage(char errorMessageText[]){
-	sendString(errorMessageText);
-	sendString("\n");
-}
+/* Datasheet 21.8.7./p.235 Flushing the Receive Buffer:
+	The receiver buffer FIFO will be flushed when the Receiver is disabled, i.e., the buffer will be emptied of
+	its contents. Unread data will be lost. If the buffer has to be flushed during normal operation, due to for
+	instance an error condition, read the UDRn I/O location until the RXCn Flag is cleared.
+*/
 
-uint8_t volatile debugMessageFlag = 0;
-uint8_t volatile systemMessageFlag = 1;
-
-void debugMessage(char debugMessageText[]){
-	if(debugMessageFlag==1){
-		sendString(debugMessageText);
-		sendString("\n");
-	}
-}
-
-void systemMessage(char systemMessageText[]){
-	if(systemMessageFlag==1){
-		sendString(systemMessageText);
-		sendString("\n");
-	}
+void UART_Flush( void ){ 
+	unsigned char dummy;
+	while ( UCSR0A & (1<<RXC0) ) dummy = UDR0;
 }
