@@ -391,36 +391,37 @@ uint8_t dynamicBufferSize(void)
 
 uint8_t uartConsistencyCheck(void)
 {
+	uint8_t tailElement = (UART_RxTail + 1) & UART_RX_BUFFER_MASK; 
 	if (dynamicBufferSize()<8)
 	{
 		return 0;
 	}
-	else if (UART_RxBuf[UART_RxTail]== 'S')
+	else if (UART_RxBuf[tailElement] == 'S')
 	{
 		for (int i = 1; i < 8; i++)
 		{
-			if (UART_RxTail + i & UART_RX_BUFFER_MASK == UART_RxHead)
+			if ((tailElement + i) & UART_RX_BUFFER_MASK == UART_RxHead)
 			{
 				return 0;
 			} else
 			{
-				char c = UART_RxBuf[(UART_RxTail + i) & UART_RX_BUFFER_MASK];
+				char c = UART_RxBuf[(tailElement + i) & UART_RX_BUFFER_MASK];
 				if (c == 'E' && i == 7)
 				{
 					return 1;
 				}
 			}
 		}
-		UART_RxTail = (UART_RxTail + 1) & UART_RX_BUFFER_MASK;
+		UART_RxTail = tailElement;
 		return uartConsistencyCheck();
 	} else
 	{
-		for (int i = 1; (UART_RxTail + i) & UART_RX_BUFFER_MASK != UART_RxHead; i++)
+		for (int i = 1; ((tailElement + i) & UART_RX_BUFFER_MASK) != ((UART_RxHead + 1) & UART_RX_BUFFER_MASK); i++)
 		{
-			char c = UART_RxBuf[(UART_RxTail + i) & UART_RX_BUFFER_MASK];
+			char c = UART_RxBuf[(tailElement + i) & UART_RX_BUFFER_MASK];
 			if (c == 'S')
 			{
-				UART_RxTail = (UART_RxTail + i) & UART_RX_BUFFER_MASK;
+				UART_RxTail = (tailElement + i - 1) & UART_RX_BUFFER_MASK;
 				return uartConsistencyCheck();
 			}
 		}
@@ -444,11 +445,13 @@ void uartGetData(uint8_t data[])
 	}
 }
 
+
+
 void clearReceiveBufferIfNecessary(void) 
 {
 	if (dynamicBufferSize() > UART_RX_BUFFER_SIZE / 2)
 	{
-		UART_RxTail = UART_RxHead;
+		UART_RxTail = (UART_RxHead - 15) & UART_RX_BUFFER_MASK;
 	}
 }
 

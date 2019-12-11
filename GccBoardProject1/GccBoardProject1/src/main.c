@@ -191,17 +191,20 @@ int main (void)
 	
 	while (1) {
 		
-		if(/*calcBool ==*/ 1 && /*uartConsistencyCheck() ==*/ 1)
+		if(calcBool == 1 && uartConsistencyCheck() == 1)
 		{
-			uint8_t dataArray[6];
-			uartGetData(dataArray);
-			//_delay_ms(250);
-			sendString(dataArray);
+			//uint8_t dataArray[6]
+			char dataArray[6];
+			uartGetData(dataArray);	
+			for (int i = 0; i< 6; i++)
+			{
+				uart_putc(dataArray[i]);
+			}
 			clearReceiveBufferIfNecessary();
 			//Konsitenzprüfung
-			//float xAcc = convertToAccel(dataArray[3]);
-			//float yAcc = convertToAccel(dataArray[4]);
-			//loadTimerValues(accelerationsToAngles(xAcc, yAcc));
+			float xAcc = convertToAccel(dataArray[3]);
+			float yAcc = convertToAccel(dataArray[4]);
+			loadTimerValues(accelerationsToAngles(xAcc, yAcc));
 
 			calcBool = 0;
 		}
