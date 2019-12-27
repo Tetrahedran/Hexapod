@@ -1,3 +1,5 @@
+
+
 #define F_CPU 16000000UL
 #include <asf.h>
 #include <math.h>
@@ -27,51 +29,24 @@ volatile uint16_t turnOffCounter = 0;
 volatile uint16_t turnOnCounter = 0;
 volatile uint8_t pinCounter = 0; //Z√§hlt, welcher Wert in pinTimers als n√§chstes gelesen wird
 
+volatile uint8_t calcBool = 0;
+
 volatile struct Vector trans = (struct Vector) {0.0f, 0.0f, 0.163f};
 
 volatile struct PinTimer pinTimers[6];
 
-int main (void)
-{
-	_delay_ms(100);
-	
-	init_uart();
-	
-	//Power Source
-	DDRB = 0xff;
-	PORTB = 0xff;
-	
-	//Initialisierung 50ms timer
-	TCCR2A = (1<<WGM01);
-	TCCR2B = (1<<CS20);
-	TIMSK2 |= (1<<OCIE2A);
-	OCR2A = 255;
-	
-	//Initialisierung variabler PWM-Timer
-	TCCR0A = (1<<WGM01);
-	TCCR0B = (0<<CS00);
-	TIMSK0 |= (1<<OCIE0A);
-	OCR0A = 255;
-	sei();
-
-	initialize(0.55f, 0.24f, 0.215f, 0.055f, 0.45f, 0.45f);
-	
-	loadTimerValues((struct Quaternion) {1,0,0,0});
-	
-	while (1) {
-		float xAcc = convertToAccel(getValueAtPosition(3));
-		float yAcc = convertToAccel(getValueAtPosition(4));
-		loadTimerValues(accelerationsToAngles(xAcc, yAcc));				
-	}
-	return 0;
-}
 
 ISR( TIMER2_COMPA_vect )
 {
 	turnOnCounter++;
-	OCR2A = 255;
-	if (turnOnCounter >= 3125)
+	OCR2A = 249;
+	if (turnOnCounter == 30)
 	{
+		calcBool = 0;
+	}
+	if (turnOnCounter >= 50)
+	{
+		//UCSR0B |= (0<<RXCIE0);//Disable Usart interrupt
 		TCCR0B |= (1<<CS00);
 		turnOnCounter = 0;
 		PORTA = 0xff; // 0011 1111
@@ -101,6 +76,8 @@ ISR( TIMER0_COMPA_vect )
 			pinCounter = 0;
 			PORTA = 0;
 			TCCR0B = 0;
+			calcBool = 1;
+			//UCSR0B |= (1<<RXCIE0);//Enable Usart Interrupt
 		}
 	}
 }
@@ -173,4 +150,64 @@ float convertToAccel(uint8_t relAcc)
 	float baum = 2.0f * quotient;
 	float nulle = baum * maxAcc;
 	return nulle;	
+}
+
+
+int main (void)
+{
+	_delay_ms(100);
+	
+	cli();
+	
+	//uart_init(UART_BAUD_RATE);
+	uart_init( UART_BAUD_SELECT(UART_BAUD_RATE, F_CPU) );
+	
+	//nicht benˆtigt
+	////Power Source
+	//DDRB = 0xff;
+	//PORTB = 0xff;
+	
+	DDRC = 0xff;
+	PORTC = 0x00;
+	
+	DDRA = 0xff;
+	
+	//Initialisierung 50ms timer
+	TCCR2A = (1<<WGM01);
+	TCCR2B = (1<<CS22);
+	TIMSK2 |= (1<<OCIE2A);
+	OCR2A = 249;
+	
+	//Initialisierung variabler PWM-Timer
+	TCCR0A = (1<<WGM01);
+	TCCR0B = (0<<CS00);
+	TIMSK0 |= (1<<OCIE0A);
+	OCR0A = 255;
+	sei();
+
+	initialize(0.55f, 0.24f, 0.215f, 0.055f, 0.45f, 0.45f);
+	
+	loadTimerValues((struct Quaternion) {1,0,0,0});
+	
+	while (1) {
+		
+		if(calcBool == 1 && uartConsistencyCheck() == 1)
+		{
+			//uint8_t dataArray[6]
+			char dataArray[6];
+			uartGetData(dataArray);	
+			for (int i = 0; i< 6; i++)
+			{
+				uart_putc(dataArray[i]);
+			}
+			clearReceiveBufferIfNecessary();
+			//Konsitenzpr¸fung
+			float xAcc = convertToAccel(dataArray[3]);
+			float yAcc = convertToAccel(dataArray[4]);
+			loadTimerValues(accelerationsToAngles(xAcc, yAcc));
+
+			calcBool = 0;
+		}
+	}
+	return 0;
 }
