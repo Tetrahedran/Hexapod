@@ -7,17 +7,18 @@ float accToAngle(float acc);
 struct Quaternion accelerationsToAngles(float accelerationX, float accelerationY) {
 	struct Vector acc = (struct Vector){accelerationX, accelerationY, 0};
 	float mag = magnitude(acc);
-	if(mag > maxAcc) 
-	{
+
+	if(mag > maxAcc) {
 		acc = multiply(acc, (maxAcc / mag));
 	}
+
 	float angleX = accToAngle(acc.x);
 	float angleY = accToAngle(acc.y);
 	
-	//Beschleunigung in x-Richtung benötigt Drehung um y-Achse
+	//Beschleunigung in x-Richtung benÃ¶tigt Drehung um y-Achse
 	struct Quaternion qX = quatForRot((struct Vector) {0.0f, 1.0f, 0.0f}, angleX);
 		
-	//Beschleunigung in y-Richtung benötigt Drehung um x-Achse
+	//Beschleunigung in y-Richtung benÃ¶tigt Drehung um x-Achse
 	struct Quaternion qY = quatForRot((struct Vector) {1.0f, 0.0f, 0.0f}, angleY);
 
 	return hamiltonP(qX, qY);
