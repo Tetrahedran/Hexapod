@@ -40,6 +40,7 @@ ISR( TIMER2_COMPA_vect )
 {
 	turnOnCounter++;
 	OCR2A = 249;
+	
 	if (turnOnCounter == 30) {
 		calcBool = 0; // wenn nicht mehr genug Zeit für die Berechnung ist, nicht berechnen
 	}
@@ -65,12 +66,13 @@ ISR( TIMER0_COMPA_vect )
 		
 		turnOffCounter = 0;
 		
+		// falls mehrere gleichzeitig enden, diese auch in diesem Zyklus abschalten
 		for (;pinTimers[pinCounter].limitRest.limit == pinTimers[pinCounter + 1].limitRest.limit && pinCounter < 5; pinCounter++) {
 			PORTA &= ~(1<<pinTimers[pinCounter + 1].pin);
 		}
 		
 		pinCounter++;
-				
+		
 		if(pinCounter >= 5) {
 			pinCounter = 0;
 			PORTA = 0;
