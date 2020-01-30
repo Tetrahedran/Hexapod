@@ -40,16 +40,15 @@ ISR( TIMER2_COMPA_vect )
 {
 	turnOnCounter++;
 	OCR2A = 249;
-	if (turnOnCounter == 30)
-	{
-		calcBool = 0;
+	
+	if (turnOnCounter == 30) {
+		calcBool = 0; // wenn nicht mehr genug Zeit für die Berechnung ist, nicht berechnen
 	}
-	if (turnOnCounter >= 50)
-	{
-		//UCSR0B |= (0<<RXCIE0);//Disable Usart interrupt
+
+	if (turnOnCounter >= 50) {
 		TCCR0B |= (1<<CS00);
 		turnOnCounter = 0;
-		PORTA = 0xff; // 0011 1111
+		PORTA = 0xff; // alle PWM-Signale gleichzeitig anschalten
 	}
 }
 
@@ -58,26 +57,27 @@ ISR( TIMER0_COMPA_vect )
 	turnOffCounter++;
 	OCR0A = 255;
 	
+	// die Timer-Werte im Array sind in limit und rest aufgeteilt
+	// limit ist die Anzahl der vollen Durchläufe und rest die Länge des letzten Durchlaufs
 	if (turnOffCounter	> pinTimers[pinCounter].limitRest.limit)
 	{
 		OCR0A = pinTimers[pinCounter].limitRest.rest;
-		PORTA &= ~(1<<pinTimers[pinCounter].pin);
+		PORTA &= ~(1<<pinTimers[pinCounter].pin); // der nächste PWM-Pin wird ausgeschaltet
 		
 		turnOffCounter = 0;
 		
-		for (;pinTimers[pinCounter].limitRest.limit == pinTimers[pinCounter + 1].limitRest.limit && pinCounter < 5; pinCounter++)
-		{
+		// falls mehrere gleichzeitig enden, diese auch in diesem Zyklus abschalten
+		for (;pinTimers[pinCounter].limitRest.limit == pinTimers[pinCounter + 1].limitRest.limit && pinCounter < 5; pinCounter++) {
 			PORTA &= ~(1<<pinTimers[pinCounter + 1].pin);
 		}
 		
 		pinCounter++;
-				
+		
 		if(pinCounter >= 5) {
 			pinCounter = 0;
 			PORTA = 0;
 			TCCR0B = 0;
 			calcBool = 1;
-			//UCSR0B |= (1<<RXCIE0);//Enable Usart Interrupt
 		}
 	}
 }
@@ -93,7 +93,7 @@ struct LimitRest calculatePwm(uint8_t pwmlength, bool firstPWM) {
 	
 	length = ((100 * pwmlength) / 255);
 	
-	if(firstPWM){
+	if(firstPWM) {
 		length += 100;
 	}
 	int number = 160 * length;
@@ -113,16 +113,16 @@ struct LimitRest calculatePwm(uint8_t pwmlength, bool firstPWM) {
 void loadTimerValues(struct Quaternion absRot) {
 	static struct Pwmlength pwmlengths[6];
 	float angles[6];
+
 	calcMotorAngles(angles, trans, absRot);
+
 	for (uint8_t i = 0; i < 6; i++)
 	{
 		float angle = angles[i];
 		uint8_t pwm = (angle + M_PI) / (2.0f * M_PI) * 255;
 		pwmlengths[i] = (struct Pwmlength) {pwm, i};
 	}
-	
-	//Beispielwerte
-	//struct Pwmlength pwmlengths[6] = {{0, 0}, {0, 1}, {0, 2}, {0, 3}, {0, 4}, {0, 5}};
+
 	for (short i = 1; i < 6; i = i+2)
 	{
 		pwmlengths[i].pwmlength = 255 - pwmlengths[i].pwmlength;
@@ -135,7 +135,7 @@ void loadTimerValues(struct Quaternion absRot) {
 		if (i > 0) {
 			partialPwm = partialPwm - pwmlengths[i - 1].pwmlength;
 			pinTimers[i].limitRest = calculatePwm(partialPwm, false);
-		}else {
+		} else {
 			pinTimers[i].limitRest = calculatePwm(partialPwm, true);
 		}
 		
@@ -159,13 +159,7 @@ int main (void)
 	
 	cli();
 	
-	//uart_init(UART_BAUD_RATE);
 	uart_init( UART_BAUD_SELECT(UART_BAUD_RATE, F_CPU) );
-	
-	//nicht ben�tigt
-	////Power Source
-	//DDRB = 0xff;
-	//PORTB = 0xff;
 	
 	DDRC = 0xff;
 	PORTC = 0x00;
@@ -191,17 +185,16 @@ int main (void)
 	
 	while (1) {
 		
-		if(calcBool == 1 && uartConsistencyCheck() == 1)
-		{
-			//uint8_t dataArray[6]
+		if(calcBool == 1 && uartConsistencyCheck() == 1) {
 			char dataArray[6];
-			uartGetData(dataArray);	
-			for (int i = 0; i< 6; i++)
-			{
+			uartGetData(dataArray);
+
+			for (int i = 0; i< 6; i++) {
 				uart_putc(dataArray[i]);
 			}
+
 			clearReceiveBufferIfNecessary();
-			//Konsitenzpr�fung
+
 			float xAcc = convertToAccel(dataArray[3]);
 			float yAcc = convertToAccel(dataArray[4]);
 			loadTimerValues(accelerationsToAngles(xAcc, yAcc));
