@@ -205,8 +205,19 @@ extern void uart_puts_p(const char *s );
 
 /**@}*/
 
+/*
+ * Prüft ob die, im Ringbuffer enthaltenen, chars konsistent sind
+ */
 extern uint8_t uartConsistencyCheck(void);
+
+/*
+ * Trägt die, im Ringbuffer enthaltenen, chars in den übergebenen Array ein
+ */
 extern void uartGetData(uint8_t data[]);
+
+/*
+ * Löscht chars aus dem Buffer wenn dieser zu voll wird
+ */
 extern void clearReceiveBufferIfNecessary(void);
 
 /**
